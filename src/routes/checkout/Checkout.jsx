@@ -10,6 +10,9 @@ import { networkAdapter } from 'services/NetworkAdapter';
 import Loader from 'components/ux/loader/loader';
 import Toast from 'components/ux/toast/Toast';
 import Schemas from 'utils/validation-schemas';
+import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
+import HotelsSearch from 'routes/listings/HotelsSearch';
 /**
  * Checkout component for processing payments and collecting user information.
  *
@@ -17,39 +20,36 @@ import Schemas from 'utils/validation-schemas';
  */
 const Checkout = () => {
   const [errors, setErrors] = useState({});
- 
+
   const [pageInfo, setPageInfo] = useState({});
- 
+
   const location = useLocation();
- 
+
   const navigate = useNavigate();
- 
+
   const [searchParams] = useSearchParams();
- 
+
   const [toastMessage, setToastMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false); 
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(false); 
- 
- 
- 
+  
+  
+
   // const [isSubmitDisabled, setIsSubmitDisabled] = useState(false);
- 
+
   // const [paymentConfirmationDetails, setPaymentConfirmationDetails] = useState({
   //   isLoading: false,
   //   data: {},
   // });
- 
+
   const dismissToast = () => {
     setToastMessage('');
   };
- 
+
   // Form state for collecting user payment and address information
   const [formData, setFormData] = useState({
     email: '',
-    nameOnCard: '',
-    cardNumber: '',
-    expiry: '',
-    cvc: '',
+    name: '',
     address: '',
     city: '',
     state: '',
@@ -58,7 +58,7 @@ const Checkout = () => {
     nationality: '',
     phoneNumber: '',
   });
- 
+
   // Format the check-in and check-out date and time
   const checkInDateTime = `${getReadableMonthFormat(
     searchParams.get('checkIn')
@@ -66,7 +66,7 @@ const Checkout = () => {
   const checkOutDateTime = `${getReadableMonthFormat(
     searchParams.get('checkOut')
   )}, ${location.state?.checkOutTime}`;
- 
+
   useEffect(() => {
     const state = location.state;
     setPageInfo(state);
@@ -74,22 +74,21 @@ const Checkout = () => {
       state.checkout === undefined || 
       state.property === undefined 
     || state.totaldays === undefined) {
- 
+      
       navigate(`/`);
     }
   }, [location]);
- 
+
   /**
    * Handle form input changes and validate the input.
    * @param {React.ChangeEvent<HTMLInputElement>} e The input change event.
    */
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    const isValid = validationSchema[name](value);
-    setFormData({ ...formData, [name]: value });
-    setErrors({ ...errors, [name]: !isValid });
-  };
- 
+  const { name, value } = e.target;
+  const isValid = typeof validationSchema[name] === 'function' && validationSchema[name](value);
+  setFormData((prevFormData) => ({ ...prevFormData, [name]: value }));
+  setErrors((prevErrors) => ({ ...prevErrors, [name]: !isValid }));
+};
   /**
    * Handle form submission and validate the form.
    * @param {React.FormEvent<HTMLFormElement>} e The form submission event.
@@ -105,69 +104,43 @@ const Checkout = () => {
     e.preventDefault();
     let isValid = true;
     const newErrors = {};
- 
+  
     Object.keys(formData).forEach((field) => {
-      if(typeof validationSchema[field]!=='function'){
-        return
-      }
- 
       const isFieldValid = validationSchema[field](formData[field]);
-      newErrors[field] = !isFieldValid;
+      newErrors[field] =!isFieldValid;
       isValid = isValid && isFieldValid;
     });
- 
+  
     setErrors(newErrors);
- 
+  
     if (!isValid) {
       return; // Stop form submission if there are errors
     }
     setIsSubmitting(true);
-    // setIsSubmitDisabled(true);
-    // setPaymentConfirmationDetails({
-    //   isLoading: true,
-    //   data: {},
-    // });
-    // const response = await networkAdapter.post(
-    //   '/api/payments/confirmation',
-    //   formData
-    // );
-    // const checkinDate = searchParams.get('checkIn');
-    // const checkoutDate = searchParams.get('checkOut');
-    // const totalAmount = pageInfo.total;
-    // if (response && response.data && response.errors.length === 0) {
-    //   setPaymentConfirmationDetails({
-    //     isLoading: false,
-    //     data: response.data,
-    //   });
-    //   const hotelName = searchParams.get('hotelName').replaceAll('-', '_');
-    const checkinDate = searchParams.get('checkIn');
-  const checkoutDate = searchParams.get('checkOut');
-  const noOfGuest = pageInfo.totaldays; // Assuming totaldays is the number of guests
-  const buyerName = formData.nameOnCard;
-  const buyerEmail = formData.email;
-  const buyerPhone = ''; // Not available in the code, please add the phone number field
-  const roomId = pageInfo.property; // Assuming property is the room ID
-  const propertyId = pageInfo.property; // Assuming property is the property ID
-  const mealPlan = ''; // Not available in the code, please add the meal plan field
-  const nationality = ''; // Not available in the code, please add the nationality field
-  const tokenAmount = 0; // Assuming total is the token amount
-  const amountPercentReceived = 0; // Not available in the code, please add the amount percent received field
-  const countryCodePhone = ''; // Not available in the code, please add the country code phone field
-  const amount = pageInfo.total; // Assuming total is the amount
-  const pmsTransactionId = Math.random().toString(36).substr(2, 9); // Generate a random transaction ID
-  const gst_amount = ''; // Not available in the code, please add the GST field
-  const roomCategory = ''; 
+  
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-      setToastMessage('');
+      //await handleButtonClick(); // Call handleButtonClick function here
+     // await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+     const response = await axios.post(
+      'https://users-dash.bubbleapps.io/api/1.1/wf/create_new_reservation',
+      payload, 
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer aec00c01ad9bf87e212367e8cd9be546'
+        }
+      }
+    ); 
+    console.log('API Response:', response.data);
+     setToastMessage('');
       const bookingDetails = {
         checkInDate: searchParams.get('checkIn'),
         checkOutDate: searchParams.get('checkOut'),
         totalAmount: pageInfo.total,
-        ...formData, // Include all form data in booking details
+       ...formData, // Include all form data in booking details
         hotel: pageInfo.property, // Assuming hotel name is in pageInfo
       };
- 
+  
       // Navigate to booking confirmation with details
       navigate('/booking-confirmation', {
         state: { confirmationData: { bookingDetails } }
@@ -175,14 +148,81 @@ const Checkout = () => {
     } catch (error) { // Handle payment failure
       setToastMessage('Payment failed. Please try again.');
       // setIsSubmitting(false);
-    }
-    finally {
+    } finally {
       setIsSubmitting(false); // Hide loading indicator regardless of success or failure
     }
   };
- 
+  
+  // const handleButtonClick = async () => {
+  //   try {
+  //    // setIsSubmitDisabled(true); // Disable the button to prevent multiple clicks
+  //     const response = await axios.post(
+  //       'https://users-dash.bubbleapps.io/api/1.1/wf/create_new_reservation',
+  //       payload, // Assuming payload is defined elsewhere
+  //       {
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': 'Bearer aec00c01ad9bf87e212367e8cd9be546'
+  //         }
+  //       }
+  //     );
+  //     console.log('API Response:', response.data);
+  //     // Optionally, handle success or update UI accordingly
+  //   } catch (error) {
+  //     console.error('Error:', error);
+  //     // Optionally, handle error or show error message to the user
+  //   } finally {
+  //     setIsSubmitDisabled(false); // Re-enable the button
+  //   }
+  // };
+  const checkinDate = "2024-11-01";
+  const checkoutDate = "2024-11-01";
+  const noOfGuest = 3; // Assuming totaldays is the number of guests
+  const buyerName = formData.nameOnCard;
+  const buyerEmail = formData.email;
+  const buyerPhone = 7668470422; // Not available in the code, please add the phone number field
+  const roomId = pageInfo.property; // Assuming property is the room ID
+  const propertyId = "1632210485323x815939605017133000"; // Assuming property is the property ID
+  const mealPlan = 500; // Not available in the code, please add the meal plan field
+  const nationality = ''; // Not available in the code, please add the nationality field
+  const tokenAmount = 0; // Assuming total is the token amount
+  const amountPercentReceived = 0; // Not available in the code, please add the amount percent received field
+  const countryCodePhone = ''; // Not available in the code, please add the country code phone field
+  const amount = pageInfo.total; // Assuming total is the amount
+  const pmsTransactionId = uuidv4(); // Generate a random transaction ID
+  const gst_amount = ''; // Not available in the code, please add the GST field
+  const roomCategory = ''; 
+  const payload = {
+    checkinDate: checkinDate,
+    checkoutDate: checkoutDate,
+    noOfGuest: noOfGuest,      // Assuming totaldays is the number of guests
+    guestName: buyerName,
+    guestEmail: buyerEmail,
+    guestPhone: buyerPhone,             // Please add the phone number field
+    roomId: roomId,                     // Assuming property is the room ID
+    propertyId: propertyId,             // Assuming property is the property ID
+    mealPlan: mealPlan,                 // Please add the meal plan field
+    nationality: nationality,           // Please add the nationality field
+    token_amount: tokenAmount,          // Assuming total is the token amount
+    amount_percent_received: amountPercentReceived, // Please add the amount percent received field
+    countryCodePhone: formData.countryCodePhone, // Please add the country code phone field
+    amount: amount,             // Assuming total is the amount
+    pmsTransactionId: pmsTransactionId,         // Generate a random transaction ID
+    gst: gst_amount,                    // Please add the GST field
+    room_category: roomCategory,
+  };
+  
   return (
     <div className="flex flex-col justify-center items-center">
+      <FinalBookingSummary
+        hotelName={pageInfo !== undefined ? pageInfo.property : '' }
+        checkIn={pageInfo !== undefined ? pageInfo.checkin : ''}
+        checkOut={pageInfo !== undefined ? pageInfo.checkout : ''}
+        isAuthenticated={isAuthenticated}
+        phone={userDetails?.phone}
+        email={userDetails?.email}
+        fullName={userDetails?.fullName}
+      />
       <div className="relative bg-white border shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-lg mx-auto">
         {isSubmitting && <Loader isFullScreen={true} loaderText={'Processing Payment...'} />}
         <form onSubmit={handleSubmit} className={isSubmitting? 'opacity-40' : ''}>
@@ -199,15 +239,15 @@ const Checkout = () => {
           <InputField
             label="Name"
             type="text"
-            name="nameOnCard"
-            value={formData.nameOnCard}
+            name="name"
+            value={formData.name}
             onChange={handleChange}
             placeholder="Alex"
             required={true}
-            error={errors.nameOnCard}
+            error={errors.name}
           />
- 
- 
+          
+        
           <InputField
             label="Address"
             type="text"
@@ -260,18 +300,18 @@ const Checkout = () => {
             required={true}
             error={errors.countryCodePhone}
           />
- 
+          
           <InputField
             label="Phone number"
             type="text"
-            name="phoneNumber"
+            name="phone"
             value={formData.phoneNumber}
             onChange={handleChange}
             placeholder="Phone number"
             required={true}
-            error={errors.phoneNumber}
+            error={errors.phone}
           />
- 
+         
           <InputField
             label="Nationality"
             type="text"
@@ -282,23 +322,22 @@ const Checkout = () => {
             required={true}
             error={errors.nationality}
           />
- 
- 
-          <div className="flex items-center justify-between">
-            <button
-              className={`bg-brand hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300 ${
-                isSubmitDisabled
-                 ? 'opacity-50 cursor-not-allowed'
-                  :'hover:bg-blue-700'
-              }`}
-              type="submit"
-              disabled={isSubmitDisabled}
-            >
-              Pay ₹ {pageInfo.total}
-            </button>
-          </div>
+         
+         <div className="flex items-center justify-between">
+      <button
+        className={`bg-brand hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300 ${
+          isSubmitDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+        }`}
+        type="submit"
+       // Add event handler
+        disabled={isSubmitDisabled}
+      >
+        Pay ₹ {pageInfo.total}
+      </button>
+    </div>
+        
         </form>
- 
+  
         {toastMessage && (
           <div className="my-4">
             <Toast
@@ -312,7 +351,7 @@ const Checkout = () => {
     </div>
   );
 };
- 
+
 /**
  * Generic Input field component for collecting user information.
  * @param {Object} props The component props.
@@ -362,19 +401,18 @@ const InputField = ({
     )}
   </div>
 );
- 
+
 // Validation schema for form fields
 const validationSchema = {
   email: (value) => /\S+@\S+\.\S+/.test(value),
-  nameOnCard: (value) => value.trim() !== '',
+  name: (value) => value.trim() !== '',
   address: (value) => value.trim() !== '',
   city: (value) => value.trim() !== '',
   state: (value) => value.trim() !== '',
-  postalCode: (value) => /^\d{5}(-\d{4})?$/.test(value),
+  postalCode: (value) => /^\d{6}(-\d{4})?$/.test(value),
   countryCodePhone: (value) => /^\d{1,4}$/.test(value), // Country code phone
   nationality: (value) => value.trim() !== '', // Nationality
-  phoneNumber: (value) => /^\d{10}$/.test(value), // Phone number
+  
 };
- 
+
 export default Checkout;
- 
