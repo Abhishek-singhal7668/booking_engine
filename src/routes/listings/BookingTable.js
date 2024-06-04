@@ -109,7 +109,16 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, onSe
  
   return (
     <tr className='hover:bg-gray-100'>
-      <Td>{roomType}</Td>
+      <Td>
+        <div className='flex items-center'>
+        {room_image ? (
+            <img src={room_image} alt={roomType} className="w-12 h-12 mr-2 rounded" />
+        ) : (
+            <div className="w-12 h-12 mr-2 rounded bg-gray-300"></div> // Placeholder
+        )}
+        <span>{roomType}</span>
+    </div>
+      </Td>
       <Td>
           <FontAwesomeIcon icon={faUser} className="text-lg" />
           <span className='text-xl mx-3'>x</span>

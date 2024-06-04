@@ -263,7 +263,7 @@ const HotelsSearch = () => {
       <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes}/>
       <div className="flex justify-end items-center mt-4 px-5"> {/* Added flex container */}
   <div className="mr-4">
-    <h4>Total: {total}</h4>
+    <h4>Gross Total: {total}</h4>
     <h4>Taxes : {taxes}</h4>
   </div>
   <Button 

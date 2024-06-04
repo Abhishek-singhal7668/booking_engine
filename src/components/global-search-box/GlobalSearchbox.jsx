@@ -45,20 +45,24 @@ const GlobalSearchBox = (props) => {
   const [guestSelectorOpen, setGuestSelectorOpen] = useState(false);
   return (
     <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box">
-      <Select
-      onChange={handlePropertyNameChange}
-      dropdownStyle={{ borderRadius: 0 }}
-      value={defaultPropertyValue}
-      style={{
-        width: '220.8px', 
-        height: '43.2px',  
-        lineHeight: '43.2px', 
-        border: '2px solid gold', 
-        borderRadius: '0px', 
-      }}
-    >
+      <Select placeholder="Select Property"
+   // Keep your existing classes
+  value={propertyListInput.find(
+    (property) => property.title === defaultPropertyValue
+  )?.title || null}
+  onChange={(value) => handlePropertyNameChange(value)}
+  dropdownStyle={{ borderRadius: 0 }}
+  style={{
+    width: '220.8px', // Set width
+    height: '43.2px',  // Set height
+    lineHeight: '43.2px', // Vertical align text
+    border: '2px solid gold', // Golden border
+    borderRadius: '0px', // Square corners
+  }} // Add custom styles for the square box
+  
+>
   {propertyListInput.map((property, index) => (
-    <Select.Option key={`property-${index}`} value={property.title}>
+    <Select.Option defaultPropertyValue={defaultPropertyValue} key={`property-${index}`} value={property.title}>
       {property.title}
     </Select.Option>
   ))}

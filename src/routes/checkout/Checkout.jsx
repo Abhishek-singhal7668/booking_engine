@@ -17,32 +17,32 @@ import Schemas from 'utils/validation-schemas';
  */
 const Checkout = () => {
   const [errors, setErrors] = useState({});
-
+ 
   const [pageInfo, setPageInfo] = useState({});
-
+ 
   const location = useLocation();
-
+ 
   const navigate = useNavigate();
-
+ 
   const [searchParams] = useSearchParams();
-
+ 
   const [toastMessage, setToastMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false); 
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(false); 
-  
-  
-
+ 
+ 
+ 
   // const [isSubmitDisabled, setIsSubmitDisabled] = useState(false);
-
+ 
   // const [paymentConfirmationDetails, setPaymentConfirmationDetails] = useState({
   //   isLoading: false,
   //   data: {},
   // });
-
+ 
   const dismissToast = () => {
     setToastMessage('');
   };
-
+ 
   // Form state for collecting user payment and address information
   const [formData, setFormData] = useState({
     email: '',
@@ -58,7 +58,7 @@ const Checkout = () => {
     nationality: '',
     phoneNumber: '',
   });
-
+ 
   // Format the check-in and check-out date and time
   const checkInDateTime = `${getReadableMonthFormat(
     searchParams.get('checkIn')
@@ -66,7 +66,7 @@ const Checkout = () => {
   const checkOutDateTime = `${getReadableMonthFormat(
     searchParams.get('checkOut')
   )}, ${location.state?.checkOutTime}`;
-
+ 
   useEffect(() => {
     const state = location.state;
     setPageInfo(state);
@@ -74,11 +74,11 @@ const Checkout = () => {
       state.checkout === undefined || 
       state.property === undefined 
     || state.totaldays === undefined) {
-      
+ 
       navigate(`/`);
     }
   }, [location]);
-
+ 
   /**
    * Handle form input changes and validate the input.
    * @param {React.ChangeEvent<HTMLInputElement>} e The input change event.
@@ -89,7 +89,7 @@ const Checkout = () => {
     setFormData({ ...formData, [name]: value });
     setErrors({ ...errors, [name]: !isValid });
   };
-
+ 
   /**
    * Handle form submission and validate the form.
    * @param {React.FormEvent<HTMLFormElement>} e The form submission event.
@@ -105,15 +105,19 @@ const Checkout = () => {
     e.preventDefault();
     let isValid = true;
     const newErrors = {};
-
+ 
     Object.keys(formData).forEach((field) => {
+      if(typeof validationSchema[field]!=='function'){
+        return
+      }
+ 
       const isFieldValid = validationSchema[field](formData[field]);
       newErrors[field] = !isFieldValid;
       isValid = isValid && isFieldValid;
     });
-
+ 
     setErrors(newErrors);
-
+ 
     if (!isValid) {
       return; // Stop form submission if there are errors
     }
@@ -163,7 +167,7 @@ const Checkout = () => {
         ...formData, // Include all form data in booking details
         hotel: pageInfo.property, // Assuming hotel name is in pageInfo
       };
-
+ 
       // Navigate to booking confirmation with details
       navigate('/booking-confirmation', {
         state: { confirmationData: { bookingDetails } }
@@ -176,7 +180,7 @@ const Checkout = () => {
       setIsSubmitting(false); // Hide loading indicator regardless of success or failure
     }
   };
-
+ 
   return (
     <div className="flex flex-col justify-center items-center">
       <div className="relative bg-white border shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-lg mx-auto">
@@ -202,8 +206,8 @@ const Checkout = () => {
             required={true}
             error={errors.nameOnCard}
           />
-          
-        
+ 
+ 
           <InputField
             label="Address"
             type="text"
@@ -256,18 +260,18 @@ const Checkout = () => {
             required={true}
             error={errors.countryCodePhone}
           />
-          
+ 
           <InputField
             label="Phone number"
             type="text"
-            name="phone"
+            name="phoneNumber"
             value={formData.phoneNumber}
             onChange={handleChange}
             placeholder="Phone number"
             required={true}
-            error={errors.phone}
+            error={errors.phoneNumber}
           />
-         
+ 
           <InputField
             label="Nationality"
             type="text"
@@ -278,8 +282,8 @@ const Checkout = () => {
             required={true}
             error={errors.nationality}
           />
-         
-          
+ 
+ 
           <div className="flex items-center justify-between">
             <button
               className={`bg-brand hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300 ${
@@ -294,7 +298,7 @@ const Checkout = () => {
             </button>
           </div>
         </form>
-  
+ 
         {toastMessage && (
           <div className="my-4">
             <Toast
@@ -308,7 +312,7 @@ const Checkout = () => {
     </div>
   );
 };
-
+ 
 /**
  * Generic Input field component for collecting user information.
  * @param {Object} props The component props.
@@ -358,7 +362,7 @@ const InputField = ({
     )}
   </div>
 );
-
+ 
 // Validation schema for form fields
 const validationSchema = {
   email: (value) => /\S+@\S+\.\S+/.test(value),
@@ -371,5 +375,6 @@ const validationSchema = {
   nationality: (value) => value.trim() !== '', // Nationality
   phoneNumber: (value) => /^\d{10}$/.test(value), // Phone number
 };
-
+ 
 export default Checkout;
+ 

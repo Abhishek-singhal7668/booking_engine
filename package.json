@@ -28,6 +28,7 @@
     "react-to-print": "^2.15.1",
     "sass": "^1.75.0",
     "tailwind-styled-components": "^2.2.0",
+    "uuid": "^9.0.1",
     "web-vitals": "^3.5.2",
     "yup": "^1.4.0"
   },
