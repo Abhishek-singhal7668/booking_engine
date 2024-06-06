@@ -241,7 +241,7 @@ const HotelBookingDetailsCard = ({ hotelCode }) => {
         {/* Taxes */}
         <div className="mb-4">
           <div className="font-semibold text-gray-800">Taxes</div>
-          <div className="text-gray-600">{taxes}</div>
+          <div className="text-gray-600">{}</div>
           <div className="text-xs text-gray-500">{DEFAULT_TAX_DETAILS}</div>
         </div>
 

@@ -16,13 +16,56 @@ import { useNavigate } from 'react-router-dom';
 import { formatPrice } from 'utils/price-helpers';
 import { Button } from 'antd';
 import properties from './properties.json'
- 
+import calculateRoomPrice from 'utils/calculateRoomPrice';
+import tw from 'tailwind-styled-components';
  
 /**
  * Represents the hotels search component.
  * @component
  * @returns {JSX.Element} The hotels search component.
  */
+const Container = tw.div`
+  w-full
+  mx-auto
+  my-6
+  p-4
+  bg-white
+  rounded
+  shadow
+  flex
+  flex-col
+  sm:flex-row
+  sm:items-center
+  sm:justify-between
+`;
+
+const TotalsWrapper = tw.div`
+  flex
+  flex-col
+  items-end
+  mb-4
+  sm:mb-0
+  sm:mr-4
+`;
+
+const ButtonWrapper = tw.div`
+  flex
+  justify-end
+  sm:justify-start
+`;
+
+const Buton = tw.button`
+  bg-[#006ce4]
+  hover:bg-blue-700
+  text-white
+  font-bold
+  h-[44px]
+  w-[120px]
+  rounded
+  ml-0
+  mt-4
+  sm:ml-0 
+`;
 const HotelsSearch = () => {
  
   const navigate = useNavigate();
@@ -132,7 +175,8 @@ const HotelsSearch = () => {
               max_occ: room.max_occupancy,
               totaldays:totalDays,
               standard_occupancy:room.standard_occupancy,
-              room_image:room.room_image
+              room_image:room.room_image,
+              id:room.parent_property
 
           };
       } else {
@@ -192,11 +236,12 @@ const HotelsSearch = () => {
     const [day, month, year] = originalDateString.split('/').map(Number);
     const date = new Date(Date.UTC(year, month - 1, day, 0, 0));
     const isoDateString = date.toISOString();
-    return `${isoDateString.substring(0,19)}Z`;
-  }
+    return `${isoDateString.substring(0, 19)}Z`;
+  };
+  
  
   const onSelectAmountChange = ( cnt, rate,roomType) => {
-    const {total,taxes} = calculatePrices(rate,cnt,pageInfo.totaldays);
+    const {total,taxes} = calculateRoomPrice(rate,cnt,pageInfo.totaldays);
     let tempRes = [...searchResult];
     let changedRoom = tempRes.filter((e)=>e.room_type === roomType);
     const index = tempRes.indexOf(changedRoom[0]);
@@ -228,24 +273,14 @@ const HotelsSearch = () => {
     calculateAllRooms();
   },[searchResult]);
  
-  const calculatePrices = (currentNightRate,numberOfRooms, numberOfDays) => {
-    const pricePerNight = currentNightRate * numberOfRooms;
-    const gstRate =
-      pricePerNight <= 2500 ? 0.12 : pricePerNight > 7500 ? 0.18 : 0.12;
-    const totalGst = (pricePerNight * numberOfDays * gstRate).toFixed(2);
-    const totalPrice = (
-      pricePerNight * numberOfDays +
-      parseFloat(totalGst)
-    ).toFixed(2);
-    return {total:`${parseFloat(totalPrice)}`, taxes:`${parseFloat(totalGst)}`};
-  };
+ 
  
  
   return (
     <div className="hotels">
       <div className="bg-brand px-2 lg:h-[120px] h-[220px] flex items-center justify-center">
         <GlobalSearchBox
-          propertyListInput ={propertyListInput }
+          propertyListInput ={propertyListInput}
           numGuestsInputValue={numGuestsInputValue}
           isDatePickerVisible={isDatePickerVisible}
           setisDatePickerVisible={setisDatePickerVisible}
@@ -262,16 +297,24 @@ const HotelsSearch = () => {
       <div className="w-[180px]"></div>
       <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes}/>
       <div className="flex justify-end items-center mt-4 px-5"> {/* Added flex container */}
-  <div className="mr-4">
-    <h4>Gross Total: {total}</h4>
-    <h4>Taxes : {taxes}</h4>
-  </div>
-  <Button 
-    onClick={handleSubmit} 
-    className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded ml-4"
-  > 
-    Book now
-  </Button>
+      <div class="flex justify-between items-center mr-4">
+      <div className="flex justify-end items-center mt-4 px-5">
+    
+    <Container>
+      <TotalsWrapper>
+        <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>
+        <h4>Taxe: ₹{taxes.toFixed(2)}</h4>
+        <h4>Gross Total: ₹{total.toFixed(2)}</h4>
+      </TotalsWrapper>
+      <ButtonWrapper>
+        <Buton onClick={handleSubmit}>
+          Book Now
+        </Buton>
+      </ButtonWrapper>
+    </Container>
+</div>
+
+</div>
 </div>
     </div>
   );

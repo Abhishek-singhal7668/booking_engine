@@ -196,6 +196,25 @@
         "price": "14599",
         "ratings": "3",
         "city": "pune"
+      },
+      {
+        "hotelCode": 71223,
+        "images": [
+          {
+            "imageUrl": "/images/hotels/465660377/465660377.jpg",
+            "accessibleText": "Courtyard by Marriott Pune"
+          }
+        ],
+        "title": "Hotel Blue Sea",
+        "subtitle": "C 988, Block C Dr, Block C, Sushant Lok Phase I, Sector 43, Gurugram, Haryana 122009",
+        "benefits": [
+          "Free cancellation",
+          "No prepayment needed – pay at the property",
+          "Free wifi"
+        ],
+        "price": "25300",
+        "ratings": "4",
+        "city": "pune"
       }
       
 ]

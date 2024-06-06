@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { faUser, faChild } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Select from 'react-select';
@@ -9,16 +9,18 @@ const ageOptions = Array.from({ length: 18 }, (_, i) => ({
   label: `${i} years old`,
 }));
 
-const GuestSelector = ({ onClose, initialAdults, initialChildren }) => {
+const GuestSelector = ({ onClose, initialAdults, initialChildren, showModal, setShowModal }) => {
   const [adults, setAdults] = useState(initialAdults);
   const [children, setChildren] = useState(initialChildren);
   const [childAges, setChildAges] = useState(new Array(initialChildren).fill(0));
   const wrapperRef = useRef();
+
   useEffect(() => {
     setAdults(initialAdults);
     setChildren(initialChildren);
     setChildAges(new Array(initialChildren).fill(0));
-  }, [initialAdults, initialChildren]); 
+  }, [initialAdults, initialChildren]);
+
   useOutsideClickHandler(wrapperRef, () => onClose(adults, children)); // Handle outside clicks
 
   const handleAddAdult = () => {
@@ -51,11 +53,14 @@ const GuestSelector = ({ onClose, initialAdults, initialChildren }) => {
 
   const handleClose = () => {
     onClose(adults, children);
+    setShowModal(false); // Close the modal
   };
+
+  if (!showModal) return null;
 
   return (
     <div className="fixed top-0 left-0 w-screen h-screen bg-gray-500 bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-4 rounded-lg shadow-md">
+      <div className="bg-white p-4 rounded-lg shadow-md" ref={wrapperRef}>
         <div className="flex items-center mb-4">
           <FontAwesomeIcon icon={faUser} className="text-blue-500 mr-2" />
           <span className="text-gray-600 font-semibold">Adults</span>
@@ -94,7 +99,8 @@ const GuestSelector = ({ onClose, initialAdults, initialChildren }) => {
             </span>
             <button
               className="bg-gray-100 text-gray-700 font-semibold py-1 px-2 rounded-r-md"
-              onClick={handleAddChild}>
+              onClick={handleAddChild}
+            >
               +
             </button>
           </div>

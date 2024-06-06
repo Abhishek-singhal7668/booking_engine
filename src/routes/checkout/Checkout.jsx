@@ -56,28 +56,28 @@ const Checkout = () => {
     postalCode: '',
     countryCodePhone: '',
     nationality: '',
-    phoneNumber: '',
+    phone: '',
   });
 
   // Format the check-in and check-out date and time
-  const checkInDateTime = `${getReadableMonthFormat(
-    searchParams.get('checkIn')
-  )}, ${location.state?.checkInTime}`;
-  const checkOutDateTime = `${getReadableMonthFormat(
-    searchParams.get('checkOut')
-  )}, ${location.state?.checkOutTime}`;
+  // const checkInDateTime = `${getReadableMonthFormat(
+  //   searchParams.get('checkIn')
+  // )}, ${location.state?.checkInTime}`;
+  // const checkOutDateTime = `${getReadableMonthFormat(
+  //   searchParams.get('checkOut')
+  // )}, ${location.state?.checkOutTime}`;
 
-  useEffect(() => {
-    const state = location.state;
-    setPageInfo(state);
-    if (state.checkin === undefined || 
-      state.checkout === undefined || 
-      state.property === undefined 
-    || state.totaldays === undefined) {
+  // useEffect(() => {
+  //   const state = location.state;
+  //   setPageInfo(state);
+  //   if (state.checkin === undefined || 
+  //     state.checkout === undefined || 
+  //     state.property === undefined 
+  //   || state.totaldays === undefined) {
       
-      navigate(`/`);
-    }
-  }, [location]);
+  //     navigate(`/`);
+  //   }
+  // }, [location]);
 
   /**
    * Handle form input changes and validate the input.
@@ -106,9 +106,14 @@ const Checkout = () => {
     const newErrors = {};
   
     Object.keys(formData).forEach((field) => {
-      const isFieldValid = validationSchema[field](formData[field]);
-      newErrors[field] =!isFieldValid;
-      isValid = isValid && isFieldValid;
+      if (typeof validationSchema[field] === 'function') {
+        const isFieldValid = validationSchema[field](formData[field]);
+        newErrors[field] = !isFieldValid;
+        isValid = isValid && isFieldValid;
+      } else {
+        // If there's no validation function, assume the field is valid
+        newErrors[field] = false;
+      }
     });
   
     setErrors(newErrors);
@@ -175,23 +180,23 @@ const Checkout = () => {
   //     setIsSubmitDisabled(false); // Re-enable the button
   //   }
   // };
-  const checkinDate = "2024-11-01";
-  const checkoutDate = "2024-11-01";
+  const checkinDate = "";
+  const checkoutDate = "";
   const noOfGuest = 3; // Assuming totaldays is the number of guests
-  const buyerName = formData.nameOnCard;
+  const buyerName = formData.name;
   const buyerEmail = formData.email;
-  const buyerPhone = 7668470422; // Not available in the code, please add the phone number field
+  const buyerPhone = formData.phone; // Not available in the code, please add the phone number field
   const roomId = pageInfo.property; // Assuming property is the room ID
   const propertyId = "1632210485323x815939605017133000"; // Assuming property is the property ID
-  const mealPlan = 500; // Not available in the code, please add the meal plan field
-  const nationality = ''; // Not available in the code, please add the nationality field
+  const mealPlan = 0; // Not available in the code, please add the meal plan field
+  const nationality = pageInfo.nationality; // Not available in the code, please add the nationality field
   const tokenAmount = 0; // Assuming total is the token amount
   const amountPercentReceived = 0; // Not available in the code, please add the amount percent received field
-  const countryCodePhone = ''; // Not available in the code, please add the country code phone field
+  //const countryCodePhone = ''; // Not available in the code, please add the country code phone field
   const amount = pageInfo.total; // Assuming total is the amount
   const pmsTransactionId = uuidv4(); // Generate a random transaction ID
-  const gst_amount = ''; // Not available in the code, please add the GST field
-  const roomCategory = ''; 
+  const gst_amount = pageInfo.gst; // Not available in the code, please add the GST field
+  const roomCategory = pageInfo.room_category; 
   const payload = {
     checkinDate: checkinDate,
     checkoutDate: checkoutDate,
@@ -214,7 +219,7 @@ const Checkout = () => {
   
   return (
     <div className="flex flex-col justify-center items-center">
-      <FinalBookingSummary
+      {/* <FinalBookingSummary
         hotelName={pageInfo !== undefined ? pageInfo.property : '' }
         checkIn={pageInfo !== undefined ? pageInfo.checkin : ''}
         checkOut={pageInfo !== undefined ? pageInfo.checkout : ''}
@@ -222,7 +227,7 @@ const Checkout = () => {
         phone={userDetails?.phone}
         email={userDetails?.email}
         fullName={userDetails?.fullName}
-      />
+      /> */}
       <div className="relative bg-white border shadow-md rounded px-8 pt-6 pb-8 mb-4 w-full max-w-lg mx-auto">
         {isSubmitting && <Loader isFullScreen={true} loaderText={'Processing Payment...'} />}
         <form onSubmit={handleSubmit} className={isSubmitting? 'opacity-40' : ''}>
@@ -305,7 +310,7 @@ const Checkout = () => {
             label="Phone number"
             type="text"
             name="phone"
-            value={formData.phoneNumber}
+            value={formData.phone}
             onChange={handleChange}
             placeholder="Phone number"
             required={true}
@@ -412,7 +417,7 @@ const validationSchema = {
   postalCode: (value) => /^\d{6}(-\d{4})?$/.test(value),
   countryCodePhone: (value) => /^\d{1,4}$/.test(value), // Country code phone
   nationality: (value) => value.trim() !== '', // Nationality
-  
+  phone: (value) => /^\d{10}$/.test(value),
 };
 
 export default Checkout;

@@ -1,0 +1,43 @@
+[
+    {
+      "room_type": "House",
+      "description": "Spacious and comfortable, ideal for families or groups.",
+      "amenities": [
+        "Free Wi-Fi",
+        "Air Conditioning",
+        "Flat-screen TV",
+        "Mini-bar",
+        "Tea/Coffee Maker",
+        "24-hour Room Service",
+        "Hair Dryer",
+        "Ironing Facilities",
+        "Safety Deposit Box"
+      ]
+    },
+    {
+      "room_type": "Single Room",
+      "description": "Perfect for solo travelers seeking a cozy and convenient stay.",
+      "amenities": [
+        "Free Wi-Fi",
+        "Air Conditioning",
+        "Separate Living Room",
+        "Jacuzzi Bathtub",
+        "Nespresso Machine",
+        "Premium Toiletries",
+        "Bathrobes & Slippers",
+        "Balcony with City View"
+      ]
+    },
+    {
+      "room_type": "Standard Room",
+      "description": "A comfortable and affordable option for a relaxing stay.",
+      "amenities": [
+        "Free Wi-Fi",
+        "Air Conditioning",
+        "Cable TV",
+        "Private Bathroom",
+        "Work Desk"
+      ]
+    }
+  ]
+  
