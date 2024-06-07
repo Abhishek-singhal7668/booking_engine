@@ -6,7 +6,7 @@ import isEmpty from 'utils/helpers';
 import { MAX_GUESTS_INPUT_VALUE } from 'utils/constants';
 import { formatDate } from 'utils/date-helpers';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { parse } from 'date-fns';
+import { parse,format } from 'date-fns';
 import PaginationController from 'components/ux/pagination-controller/PaginationController';
 import { SORTING_FILTER_LABELS } from 'utils/constants';
 import _debounce from 'lodash/debounce';
@@ -125,6 +125,10 @@ const HotelsSearch = () => {
   };
  
   const onSearchButtonAction = () => {
+    if(dateRange[0].startDate === dateRange[0].endDate){
+      alert('Please select a valid date range');
+      return;
+    }
     const checkInDate = formatDate(dateRange[0].startDate);
     const checkOutDate = formatDate(dateRange[0].endDate);
     navigate('/hotels', {
@@ -163,9 +167,8 @@ const HotelsSearch = () => {
   }
  
   const processResult = async (data,totalDays) => {
-    console.log(data);
-    const cleanRooms = data.filter(room => room.cleaning_status !== 'Dirty');
-    const groupedRooms = cleanRooms.reduce((acc, room) => {
+    const cleanRooms = data?.filter(room => room.cleaning_status !== 'Dirty');
+    const groupedRooms = cleanRooms?.reduce((acc, room) => {
       if (!acc[room.Room_category_new_deprecate]) {
           acc[room.Room_category_new_deprecate] = {
               room_type:room.Room_category_new_deprecate,
@@ -184,6 +187,10 @@ const HotelsSearch = () => {
       }
       return acc;
     }, {});
+    if(groupedRooms === null || groupedRooms === undefined){
+      return ;
+    }
+
     const roomTypeArray = Object.values(groupedRooms);
     return roomTypeArray;
   }
@@ -227,10 +234,19 @@ const HotelsSearch = () => {
   const [propertyListInput, setPropertyListInput] = useState(properties);
  
   const handleSubmit = () => {
+    // Format the dates just before passing them to the payload
+    const checkinDate = format(parse(pageInfo.checkin, 'dd/MM/yyyy', new Date()), 'dd-MM-yyyy');
+    const checkoutDate = format(parse(pageInfo.checkout, 'dd/MM/yyyy', new Date()), 'dd-MM-yyyy');
+  
     navigate('/checkout', {
-      state: pageInfo,
+      state: {
+        ...pageInfo,
+        checkin: checkinDate,
+        checkout: checkoutDate
+      }
     });
-  }
+  };
+  
  
   const parseIsoDate = (originalDateString) => {
     const [day, month, year] = originalDateString.split('/').map(Number);
@@ -249,6 +265,7 @@ const HotelsSearch = () => {
     tempRes[index].taxes = taxes;
     setSearchResult(tempRes);
     const {totalAllRooms,taxAllRooms} = calculateAllRooms(tempRes);
+    console.log(totalAllRooms);
     setTotal(totalAllRooms);
     setTaxes(taxAllRooms);
     setPageInfo({...pageInfo,total:totalAllRooms}) 
@@ -303,7 +320,7 @@ const HotelsSearch = () => {
     <Container>
       <TotalsWrapper>
         <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>
-        <h4>Taxe: ₹{taxes.toFixed(2)}</h4>
+        <h4>Tax: ₹{taxes.toFixed(2)}</h4>
         <h4>Gross Total: ₹{total.toFixed(2)}</h4>
       </TotalsWrapper>
       <ButtonWrapper>

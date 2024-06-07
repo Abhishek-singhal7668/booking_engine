@@ -56,7 +56,7 @@ const Checkout = () => {
     postalCode: '',
     countryCodePhone: '',
     nationality: '',
-    phone: '',
+    // phone: '',
   });
 
   // Format the check-in and check-out date and time
@@ -67,18 +67,17 @@ const Checkout = () => {
   //   searchParams.get('checkOut')
   // )}, ${location.state?.checkOutTime}`;
 
-  // useEffect(() => {
-  //   const state = location.state;
-  //   setPageInfo(state);
-  //   if (state.checkin === undefined || 
-  //     state.checkout === undefined || 
-  //     state.property === undefined 
-  //   || state.totaldays === undefined) {
-      
-  //     navigate(`/`);
-  //   }
-  // }, [location]);
+  useEffect(() => {
+    const state = location.state;
 
+    if (state && state.checkin && state.checkout && state.property && state.totaldays) {
+      setPageInfo(state);
+    } else {
+      // Only navigate if state is NOT undefined, but IS missing data
+      navigate("/", { replace: true, state: { error: "Missing booking details" }}); 
+    }
+  }, [location.state]); // Added location.state as dependency
+  
   /**
    * Handle form input changes and validate the input.
    * @param {React.ChangeEvent<HTMLInputElement>} e The input change event.
@@ -104,7 +103,7 @@ const Checkout = () => {
     e.preventDefault();
     let isValid = true;
     const newErrors = {};
-  
+    console.log(pageInfo);
     Object.keys(formData).forEach((field) => {
       if (typeof validationSchema[field] === 'function') {
         const isFieldValid = validationSchema[field](formData[field]);
@@ -136,11 +135,24 @@ const Checkout = () => {
         }
       }
     ); 
+    const secondPayload={ pmsTransactionId };
+    const res = await axios.post(
+       'https://users-dash.bubbleapps.io/api/1.1/wf/booking_engine_response',
+      secondPayload
+      , 
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer aec00c01ad9bf87e212367e8cd9be546'
+        }
+      }
+    );
     console.log('API Response:', response.data);
+    console.log(pageInfo);
      setToastMessage('');
       const bookingDetails = {
-        checkInDate: searchParams.get('checkIn'),
-        checkOutDate: searchParams.get('checkOut'),
+        checkInDate: pageInfo.checkin,
+        checkOutDate: pageInfo.checkout,
         totalAmount: pageInfo.total,
        ...formData, // Include all form data in booking details
         hotel: pageInfo.property, // Assuming hotel name is in pageInfo
@@ -180,14 +192,14 @@ const Checkout = () => {
   //     setIsSubmitDisabled(false); // Re-enable the button
   //   }
   // };
-  const checkinDate = "";
-  const checkoutDate = "";
+  const checkinDate = pageInfo.checkin;
+  const checkoutDate = pageInfo.checkout;
   const noOfGuest = 3; // Assuming totaldays is the number of guests
   const buyerName = formData.name;
   const buyerEmail = formData.email;
   const buyerPhone = formData.phone; // Not available in the code, please add the phone number field
   const roomId = pageInfo.property; // Assuming property is the room ID
-  const propertyId = "1632210485323x815939605017133000"; // Assuming property is the property ID
+  const propertyId = pageInfo.property; // Assuming property is the property ID
   const mealPlan = 0; // Not available in the code, please add the meal plan field
   const nationality = pageInfo.nationality; // Not available in the code, please add the nationality field
   const tokenAmount = 0; // Assuming total is the token amount
@@ -195,7 +207,7 @@ const Checkout = () => {
   //const countryCodePhone = ''; // Not available in the code, please add the country code phone field
   const amount = pageInfo.total; // Assuming total is the amount
   const pmsTransactionId = uuidv4(); // Generate a random transaction ID
-  const gst_amount = pageInfo.gst; // Not available in the code, please add the GST field
+  const gst_amount = pageInfo.tax; // Not available in the code, please add the GST field
   const roomCategory = pageInfo.room_category; 
   const payload = {
     checkinDate: checkinDate,
