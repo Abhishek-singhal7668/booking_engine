@@ -5,25 +5,18 @@ import { networkAdapter } from 'services/NetworkAdapter';
 import isEmpty from 'utils/helpers';
 import { MAX_GUESTS_INPUT_VALUE } from 'utils/constants';
 import { formatDate } from 'utils/date-helpers';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { parse,format } from 'date-fns';
 import PaginationController from 'components/ux/pagination-controller/PaginationController';
 import { SORTING_FILTER_LABELS } from 'utils/constants';
 import _debounce from 'lodash/debounce';
 import axios from 'axios';
 import BookingTable from './BookingTable';
-import { useNavigate } from 'react-router-dom';
-import { formatPrice } from 'utils/price-helpers';
 import { Button } from 'antd';
-import properties from './properties.json'
+import properties from './properties.json';
 import calculateRoomPrice from 'utils/calculateRoomPrice';
 import tw from 'tailwind-styled-components';
- 
-/**
- * Represents the hotels search component.
- * @component
- * @returns {JSX.Element} The hotels search component.
- */
+
 const Container = tw.div`
   w-full
   mx-auto
@@ -66,50 +59,35 @@ const Buton = tw.button`
   mt-4
   sm:ml-0 
 `;
+
 const HotelsSearch = () => {
- 
   const navigate = useNavigate();
-  // State for managing date picker visibility
   const [isDatePickerVisible, setisDatePickerVisible] = useState(false);
- 
   const instance = axios.create({
     baseURL: 'https://finner.app/api/1.1/wf',
     headers: {
-        'Authorization': `Bearer aec00c01ad9bf87e212367e8cd9be546`,
-        'Content-Type': 'application/json'
+      'Authorization': `Bearer aec00c01ad9bf87e212367e8cd9be546`,
+      'Content-Type': 'application/json'
     }
-});
- 
-  // State for managing location input value
+  });
+
   const [locationInputValue, setLocationInputValue] = useState('pune');
- 
   const [pageInfo, setPageInfo] = useState({});
- 
-  const [propertyName,setpropertyName] = useState('');
- 
-  // State for managing number of guests input value
+  const [propertyName, setpropertyName] = useState('');
+  const [propertyId, setPropertyId] = useState('');
   const [numGuestsInputValue, setNumGuestsInputValue] = useState('');
- 
-  // State for storing available cities
   const [availableCities, setAvailableCities] = useState([]);
- 
-  // State for managing current results page
   const [currentResultsPage, setCurrentResultsPage] = useState(1);
- 
-  // State for managing filters data
   const [filtersData, setFiltersData] = useState({
     isLoading: true,
     data: [],
     errors: [],
   });
- 
-  // State for storing hotels search results
   const [hotelsResults, setHotelsResults] = useState({
     isLoading: true,
     data: [],
     errors: [],
   });
- 
   const [dateRange, setDateRange] = useState([
     {
       startDate: null,
@@ -117,181 +95,191 @@ const HotelsSearch = () => {
       key: 'selection',
     },
   ]);
- 
   const location = useLocation();
- 
+
   const onDateChangeHandler = (ranges) => {
     setDateRange([ranges.selection]);
   };
- 
+
   const onSearchButtonAction = () => {
-    if(dateRange[0].startDate === dateRange[0].endDate){
+    if (dateRange[0].startDate === dateRange[0].endDate) {
       alert('Please select a valid date range');
       return;
     }
-    const checkInDate = formatDate(dateRange[0].startDate);
-    const checkOutDate = formatDate(dateRange[0].endDate);
+    const checkInDate = format(dateRange[0].startDate, "yyyy-MM-dd");
+    const checkOutDate = format(dateRange[0].endDate, "yyyy-MM-dd");
     navigate('/hotels', {
       state: {
         numGuestsInputValue,
         checkInDate,
         checkOutDate,
         propertyName,
+        propertyId
       },
     });
   };
 
- 
-  // Toggles the visibility of the date picker
   const onDatePickerIconClick = () => {
     setisDatePickerVisible(!isDatePickerVisible);
   };
- 
-  /**
-   * Handles changes in the number of guests input.
-   * @param {String} numGuests - Number of guests.
-   */
+
   const onNumGuestsInputChange = (numGuests) => {
     if (numGuests < MAX_GUESTS_INPUT_VALUE && numGuests > 0) {
       setNumGuestsInputValue(numGuests);
     }
   };
- 
+
   const [searchResult, setSearchResult] = useState([]);
 
- 
-  const fetchData = async (params,totalDays) => {
-    const res = await instance.get('/booking_engine_API', { params });
-    const processedResult = await processResult(res.data.response.room,totalDays);
-    setSearchResult(processedResult);
-  }
- 
-  const processResult = async (data,totalDays) => {
+  const fetchData = async (params, totalDays) => {
+    try {
+      const res = await instance.get('/booking_engine_API', { params });
+      const processedResult = await processResult(res.data.response.room, totalDays);
+      setSearchResult(processedResult);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const processResult = async (data, totalDays) => {
     const cleanRooms = data?.filter(room => room.cleaning_status !== 'Dirty');
     const groupedRooms = cleanRooms?.reduce((acc, room) => {
       if (!acc[room.Room_category_new_deprecate]) {
-          acc[room.Room_category_new_deprecate] = {
-              room_type:room.Room_category_new_deprecate,
-              number_of_avaiable_rooms: 1,
-              rate: room.rack_rate,
-              stand_occu: room.standard_occupancy,
-              max_occ: room.max_occupancy,
-              totaldays:totalDays,
-              standard_occupancy:room.standard_occupancy,
-              room_image:room.room_image,
-              id:room.parent_property
-
-          };
+        acc[room.Room_category_new_deprecate] = {
+          room_type: room.Room_category_new_deprecate,
+          number_of_avaiable_rooms: 1,
+          rate: room.rack_rate,
+          stand_occu: room.standard_occupancy,
+          max_occ: room.max_occupancy,
+          totaldays: totalDays,
+          standard_occupancy: room.standard_occupancy,
+          room_image: room.room_image,
+          id: room.parent_property
+        };
       } else {
-          acc[room.Room_category_new_deprecate].number_of_avaiable_rooms++;
+        acc[room.Room_category_new_deprecate].number_of_avaiable_rooms++;
       }
       return acc;
     }, {});
-    if(groupedRooms === null || groupedRooms === undefined){
-      return ;
+    if (groupedRooms === null || groupedRooms === undefined) {
+      return;
     }
 
     const roomTypeArray = Object.values(groupedRooms);
     return roomTypeArray;
-  }
-    const [total, setTotal] = useState(0);
-    const [taxes, setTaxes] = useState(0);
- 
+  };
+
+  const [total, setTotal] = useState(() => {
+    const savedTotal = localStorage.getItem('total');
+    return savedTotal !== null ? JSON.parse(savedTotal) : 0;
+  });
+
+  const [taxes, setTaxes] = useState(() => {
+    const savedTaxes = localStorage.getItem('taxes');
+    return savedTaxes !== null ? JSON.parse(savedTaxes) : 0;
+  });
+
   useEffect(() => {
     if (location.state) {
-      const { propertyName, numGuest, checkInDate, checkOutDate } = location.state;
+      const { propertyId, numGuest, checkInDate, checkOutDate } = location.state;
       if (numGuest) {
         setNumGuestsInputValue(numGuest.toString());
       }
-      setpropertyName(propertyName);
+      setPropertyId(propertyId);
       setLocationInputValue("city");
       if (checkInDate && checkOutDate) {
         setDateRange([
           {
-            startDate: parse(checkInDate, 'dd/MM/yyyy', new Date()),
-            endDate: parse(checkOutDate, 'dd/MM/yyyy', new Date()),
+            startDate: parse(checkInDate, 'yyyy-MM-dd', new Date()),
+            endDate: parse(checkOutDate, 'yyyy-MM-dd', new Date()),
             key: 'selection',
           },
         ]);
       }
-      const totalDays = parse(checkOutDate, 'dd/MM/yyyy', new Date()).getDate()-parse(checkInDate, 'dd/MM/yyyy', new Date()).getDate() ;
-      const params = {
-        checkin:parseIsoDate(checkInDate),
-        property: propertyName,
-        checkout:parseIsoDate(checkOutDate)
+      const totalDays = parse(checkOutDate, 'yyyy-MM-dd', new Date()).getDate() - parse(checkInDate, 'yyyy-MM-dd', new Date()).getDate();
+    const params = {
+      checkin: checkInDate,
+      property: propertyId,
+      checkout: checkOutDate
     };
-    let pageInfo = {...params,totaldays:totalDays};
-    setPageInfo(pageInfo);
-    fetchData(params,totalDays);
+      let pageInfo = { ...params, totaldays: totalDays };
+      setPageInfo(pageInfo);
+      fetchData(params, totalDays);
     }
   }, [location]);
- 
-  const handlePropertyNameChange = (e) => {
-    setpropertyName(e);
-  }
- 
+
+  const handlePropertyNameChange = (propertyName) => {
+    const selectedProperty = properties.find(property => property.title === propertyName);
+    if (selectedProperty) {
+      setPropertyId(selectedProperty.propertyId);
+      setpropertyName(propertyName);
+    }
+  };
+
   const [propertyListInput, setPropertyListInput] = useState(properties);
- 
+
   const handleSubmit = () => {
-  
     navigate('/checkout', {
       state: {
         ...pageInfo
       }
     });
   };
-  
- 
+
   const parseIsoDate = (originalDateString) => {
     const [day, month, year] = originalDateString.split('/').map(Number);
     const date = new Date(Date.UTC(year, month - 1, day, 0, 0));
     const isoDateString = date.toISOString();
     return `${isoDateString.substring(0, 19)}Z`;
   };
-  
- 
-  const onSelectAmountChange = ( cnt, rate,roomType) => {
-    const {total,taxes} = calculateRoomPrice(rate,cnt,pageInfo.totaldays);
+
+  const onSelectAmountChange = (cnt, rate, roomType) => {
+    const { total, taxes } = calculateRoomPrice(rate, cnt, pageInfo.totaldays);
     let tempRes = [...searchResult];
-    let changedRoom = tempRes.filter((e)=>e.room_type === roomType);
-    const index = tempRes.indexOf(changedRoom[0]);
+    let changedRoom = tempRes.find((e) => e.room_type === roomType);
+    const index = tempRes.indexOf(changedRoom);
     tempRes[index].total = total;
     tempRes[index].taxes = taxes;
     setSearchResult(tempRes);
-    const {totalAllRooms,taxAllRooms} = calculateAllRooms(tempRes);
-    console.log(totalAllRooms);
+    const { totalAllRooms, taxAllRooms } = calculateAllRooms(tempRes);
     setTotal(totalAllRooms);
     setTaxes(taxAllRooms);
-    setPageInfo({...pageInfo,total:totalAllRooms}) 
-  }
- 
+    setPageInfo((prevPageInfo) => ({
+      ...prevPageInfo,
+      total: totalAllRooms,
+      tax: taxAllRooms,
+      room_category: roomType, // Set room category
+      number_of_rooms: cnt // Set number of rooms
+    }));
+
+    // Save total and taxes to localStorage
+    localStorage.setItem('total', JSON.stringify(totalAllRooms));
+    localStorage.setItem('taxes', JSON.stringify(taxAllRooms));
+  };
+
   const calculateAllRooms = () => {
     let tot = 0;
     let tx = 0;
-    console.log(searchResult);
-    if(searchResult !== undefined && searchResult.length > 0) {
-      searchResult.map((e)=>{
-        if(e.total !== undefined && e.taxes !== undefined) {
-        tot = parseFloat(tot) + parseFloat(e.total);
-        tx = parseFloat(tx) + parseFloat(e.taxes);
+    if (searchResult !== undefined && searchResult.length > 0) {
+      searchResult.map((e) => {
+        if (e.total !== undefined && e.taxes !== undefined) {
+          tot = parseFloat(tot) + parseFloat(e.total);
+          tx = parseFloat(tx) + parseFloat(e.taxes);
         }
-      })
+      });
     }
-    return {totalAllRooms:tot,taxAllRooms:tx};
-  }
- 
-  useEffect(()=>{
+    return { totalAllRooms: tot, taxAllRooms: tx };
+  };
+
+  useEffect(() => {
     calculateAllRooms();
-  },[searchResult]);
- 
- 
- 
- 
+  }, [searchResult]);
+
   return (
     <div className="hotels">
       <div className="bg-brand px-2 lg:h-[120px] h-[220px] flex items-center justify-center">
         <GlobalSearchBox
-          propertyListInput ={propertyListInput}
+          propertyListInput={propertyListInput}
           numGuestsInputValue={numGuestsInputValue}
           isDatePickerVisible={isDatePickerVisible}
           setisDatePickerVisible={setisDatePickerVisible}
@@ -306,29 +294,22 @@ const HotelsSearch = () => {
       </div>
       <div className="my-4"></div>
       <div className="w-[180px]"></div>
-      <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes}/>
-      <div className="flex justify-end items-center mt-4 px-5"> {/* Added flex container */}
-      <div class="flex justify-between items-center mr-4">
+      <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} />
       <div className="flex justify-end items-center mt-4 px-5">
-    
-    <Container>
-      <TotalsWrapper>
-        <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>
-        <h4>Tax: ₹{taxes.toFixed(2)}</h4>
-        <h4>Gross Total: ₹{total.toFixed(2)}</h4>
-      </TotalsWrapper>
-      <ButtonWrapper>
-        <Buton onClick={handleSubmit}>
-          Book Now
-        </Buton>
-      </ButtonWrapper>
-    </Container>
-</div>
-
-</div>
-</div>
+        <div className="mr-4">
+          <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>
+          <h4>Tax: ₹{taxes.toFixed(2)}</h4>
+          <h4>Gross Total: ₹{total.toFixed(2)}</h4>
+        </div>
+        <Button
+          onClick={handleSubmit}
+          className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded ml-4"
+        >
+          Book now
+        </Button>
+      </div>
     </div>
   );
 };
- 
+
 export default HotelsSearch;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import tw from 'tailwind-styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faPlusSquare } from '@fortawesome/free-solid-svg-icons';
@@ -99,6 +99,22 @@ const MoreInfoButton = tw.button`
 `;
 
 const BookingTable = ({ roomData, onSelectAmountChange, total, taxes }) => {
+  // Load selected rooms state from localStorage
+  const savedSelectedRooms = JSON.parse(localStorage.getItem('selectedRooms')) || {};
+
+  const [selectedRoomsState, setSelectedRoomsState] = useState(savedSelectedRooms);
+
+  useEffect(() => {
+    // Save selected rooms state to localStorage whenever it changes
+    localStorage.setItem('selectedRooms', JSON.stringify(selectedRoomsState));
+  }, [selectedRoomsState]);
+
+  const handleSelectChange = (roomType, value, perNightPrice) => {
+    const updatedSelectedRooms = { ...selectedRoomsState, [roomType]: Number(value) };
+    setSelectedRoomsState(updatedSelectedRooms);
+    onSelectAmountChange(value, perNightPrice, roomType);
+  };
+
   return (
     <Table>
       <Thead>
@@ -119,7 +135,8 @@ const BookingTable = ({ roomData, onSelectAmountChange, total, taxes }) => {
               perNightPrice={e.rate}
               availableRooms={e.number_of_avaiable_rooms}
               roomType={e.room_type}
-              onSelectAmountChange={onSelectAmountChange}
+              selectedRooms={selectedRoomsState[e.room_type] || 0}
+              onSelectChange={handleSelectChange}
               total={total} 
               taxes={taxes}
               countOfGuests={e.standard_occupancy}
@@ -133,23 +150,17 @@ const BookingTable = ({ roomData, onSelectAmountChange, total, taxes }) => {
   );
 };
 
-const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, onSelectAmountChange, total, taxes, countOfGuests, room_image, roomData }) => {
-  const [selectedRooms, setSelectedRooms] = useState(0);
+const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, selectedRooms, onSelectChange, total, taxes, countOfGuests, room_image, roomData }) => {
   const [showModal, setShowModal] = useState(false);
 
   const roomInfo = useMemo(() => {
     const room = amenities.find(item => item.room_type === roomType);
     return room ? { description: room.description, amenities: room.amenities } : { description: "", amenities: [] };
   }, [roomType]);
-  
+
   const pricePerRoomType = useMemo(() => {
     return calculateRoomPrice(perNightPrice, selectedRooms, roomData[0].totaldays);
   }, [selectedRooms, perNightPrice, roomData]);
-
-  const handleSelectChange = (value) => {
-    setSelectedRooms(Number(value));
-    onSelectAmountChange(value, perNightPrice, roomType);
-  };
 
   return (
     <Tr>
@@ -176,7 +187,7 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, onSe
       </Td>
       <Td>₹{totalPrice.toFixed(2)}</Td>
       <Td>
-        <Select onChange={(e) => handleSelectChange(e.target.value)} value={selectedRooms}>
+        <Select onChange={(e) => onSelectChange(roomType, e.target.value, perNightPrice)} value={selectedRooms}>
           <Option value={0}>0</Option>
           {Array.from({ length: availableRooms }, (_, i) => (
             <Option key={i + 1} value={i + 1}>{i + 1}</Option>
