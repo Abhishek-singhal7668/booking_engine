@@ -1,6 +1,9 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWifi, faSnowflake, faTv, faCoffee, faUtensils, faBed, faBath, faMugHot, faSoap, faTshirt, faLock } from '@fortawesome/free-solid-svg-icons';
+import {
+  faWifi, faSnowflake, faTv, faCoffee, faUtensils, faBed, faBath,
+  faMugHot, faSoap, faTshirt, faLock
+} from '@fortawesome/free-solid-svg-icons';
 
 const amenityIcons = {
   "Free Wi-Fi": faWifi,
@@ -27,28 +30,30 @@ const MoreInfoModal = ({ showModal, onClose, roomType, room_image, roomDescripti
   if (!showModal) return null; // Don't render if not shown
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={onClose}></div>
-      <div className="bg-white rounded-lg shadow-lg p-8 z-10 max-w-3xl">
-        <div className="flex">
-          <img src={room_image} alt={roomType} className="w-96 h-64 object-cover rounded-lg mr-8" />
-          <div>
-            <h2 className="text-2xl font-bold mb-4">{roomType}</h2>
-            <p className="text-gray-700 mb-6">{roomDescription}</p>
-            <h3 className="text-xl font-semibold mb-2">Amenities:</h3>
-            <ul className="text-gray-700 list-disc list-inside">
-              {amenities.map((amenity, index) => (
-                <li key={index} className="flex items-center">
-                  <FontAwesomeIcon icon={amenityIcons[amenity]} className="mr-2" />
-                  {amenity}
-                </li>
-              ))}
-            </ul>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-gray-800 opacity-75" onClick={onClose}></div>
+      <div className="bg-white rounded-lg shadow-lg z-10 max-w-4xl w-full">
+        <div className="flex flex-col md:flex-row">
+          <img src={room_image} alt={roomType} className="md:w-1/2 w-full h-64 object-cover rounded-t-lg md:rounded-l-lg md:rounded-t-none" />
+          <div className="p-6 flex flex-col justify-between">
+            <div>
+              <h2 className="text-2xl font-bold mb-4 text-blue-600">{roomType}</h2>
+              <p className="text-gray-700 mb-6">{roomDescription}</p>
+              <h3 className="text-xl font-semibold mb-2">Amenities</h3>
+              <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {amenities.map((amenity, index) => (
+                  <li key={index} className="flex items-center">
+                    <FontAwesomeIcon icon={amenityIcons[amenity]} className="mr-2 text-blue-500" />
+                    <span className="text-gray-700">{amenity}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <button onClick={onClose} className="mt-6 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              Close
+            </button>
           </div>
         </div>
-        <button onClick={onClose} className="mt-6 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Close
-        </button>
       </div>
     </div>
   );

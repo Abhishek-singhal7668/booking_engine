@@ -205,7 +205,6 @@ const HotelsSearch = () => {
       }
       setpropertyName(propertyName);
       setLocationInputValue("city");
-      console.log(checkInDate);
       if (checkInDate && checkOutDate) {
         setDateRange([
           {
@@ -234,15 +233,10 @@ const HotelsSearch = () => {
   const [propertyListInput, setPropertyListInput] = useState(properties);
  
   const handleSubmit = () => {
-    // Format the dates just before passing them to the payload
-    const checkinDate = format(parse(pageInfo.checkin, 'dd/MM/yyyy', new Date()), 'dd-MM-yyyy');
-    const checkoutDate = format(parse(pageInfo.checkout, 'dd/MM/yyyy', new Date()), 'dd-MM-yyyy');
   
     navigate('/checkout', {
       state: {
-        ...pageInfo,
-        checkin: checkinDate,
-        checkout: checkoutDate
+        ...pageInfo
       }
     });
   };

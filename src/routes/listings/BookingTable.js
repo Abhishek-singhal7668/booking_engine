@@ -7,7 +7,7 @@ import MoreInfoModal from './MoreInfoModal';
 import amenities from './amenities.json';
 
 const Table = tw.table`
-  w-[97%]
+  w-full
   border-collapse
   table-auto
   mx-auto
@@ -16,9 +16,9 @@ const Table = tw.table`
 
 const Thead = tw.thead`
   text-left
-  bg-white
+  bg-gray-200
   font-medium
-  text-gray-500 
+  text-gray-700
 `;
 
 const TBody = tw.tbody`
@@ -28,8 +28,11 @@ const TBody = tw.tbody`
 
 const Tr = tw.tr`
   border
-  border-[#5bbaff]
+  border-gray-300
   text-gray-700
+  hover:bg-gray-50
+  transition
+  duration-150
 `;
 
 const Th = tw.th`
@@ -38,23 +41,28 @@ const Th = tw.th`
   text-start 
   text-sm 
   font-medium 
-  text-gray-500
+  text-gray-700
   uppercase 
-  bg-[#4c76b2]
-  text-[#fff]
+  bg-blue-600
+  text-white
 `;
 
 const Td = tw.td`
   border
-  border-[#5bbaff]
-  px-6 py-4 whitespace-nowrap font-medium text-gray-800
+  border-gray-300
+  px-6 
+  py-4 
+  whitespace-nowrap 
+  font-medium 
+  text-gray-900
 `;
 
 const Select = tw.select`
   w-full
   border
-  border-[#5bbaff]
+  border-gray-300
   p-2
+  rounded-lg
   text-gray-700
 `;
 
@@ -63,9 +71,31 @@ const Option = tw.option`
 `;
 
 const RoomName = tw.span`
+  block
+  font-bold
+  text-lg
+`;
+
+const RoomTypeContainer = tw.div`
+  flex
+  flex-wrap
+  items-center
+  w-full
+`;
+
+const RoomInfo = tw.div`
+  ml-4
+  flex-1
   overflow-hidden
-  whitespace-nowrap
-  overflow-ellipsis
+`;
+
+const MoreInfoButton = tw.button`
+  text-sm 
+  text-blue-500 
+  hover:text-blue-700 
+  mt-1
+  flex 
+  items-center
 `;
 
 const BookingTable = ({ roomData, onSelectAmountChange, total, taxes }) => {
@@ -122,28 +152,31 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, onSe
   };
 
   return (
-    <Tr className='hover:bg-gray-100'>
+    <Tr>
       <Td>
-        <div className='flex items-center'>
+        <RoomTypeContainer>
           {room_image ? (
-            <img src={room_image} alt={roomType} className="w-12 h-12 mr-2 rounded" />
+            <img src={room_image} alt={roomType} className="w-16 h-16 rounded-lg object-cover" />
           ) : (
-            <div className="w-12 h-12 mr-2 rounded bg-gray-300"></div> // Placeholder
+            <div className="w-16 h-16 rounded-lg bg-gray-300"></div> // Placeholder
           )}
-          <RoomName>{roomType}</RoomName>
-          <button onClick={() => setShowModal(true)} className="ml-2 text-xs text-blue-500 hover:text-blue-700">
-          <FontAwesomeIcon icon={faPlusSquare} className="ml-1" />  More Info 
-          </button>
-        </div>
+          <RoomInfo>
+            <RoomName>{roomType}</RoomName>
+            <span className="text-sm text-gray-500 block">{roomInfo.description.split(' ').slice(0, 10).join(' ')}...</span>
+            <MoreInfoButton onClick={() => setShowModal(true)}>
+              <FontAwesomeIcon icon={faPlusSquare} className="mr-1" /> More Info
+            </MoreInfoButton>
+          </RoomInfo>
+        </RoomTypeContainer>
       </Td>
-      <Td>
+      <Td className="flex items-center">
         <FontAwesomeIcon icon={faUser} className="text-lg" />
         <span className='text-xl mx-3'>x</span>
         {countOfGuests}
       </Td>
       <Td>₹{totalPrice.toFixed(2)}</Td>
       <Td>
-        <Select className="bg-blue-100 text-blue-700 border border-blue-300 rounded" onChange={(e) => handleSelectChange(e.target.value)}>
+        <Select onChange={(e) => handleSelectChange(e.target.value)} value={selectedRooms}>
           <Option value={0}>0</Option>
           {Array.from({ length: availableRooms }, (_, i) => (
             <Option key={i + 1} value={i + 1}>{i + 1}</Option>
@@ -161,9 +194,7 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, onSe
         onClose={() => setShowModal(false)} 
         roomType={roomType}
         room_image={room_image}
-        roomDescription={roomInfo.description
-
-        }
+        roomDescription={roomInfo.description}
         amenities={roomInfo.amenities}
       />
     </Tr>

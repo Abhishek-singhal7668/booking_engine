@@ -12,6 +12,7 @@ import Toast from 'components/ux/toast/Toast';
 import Schemas from 'utils/validation-schemas';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
+import { parse,format } from 'date-fns';
 import HotelsSearch from 'routes/listings/HotelsSearch';
 /**
  * Checkout component for processing payments and collecting user information.
@@ -68,14 +69,12 @@ const Checkout = () => {
   // )}, ${location.state?.checkOutTime}`;
 
   useEffect(() => {
-    const state = location.state;
-
-    if (state && state.checkin && state.checkout && state.property && state.totaldays) {
-      setPageInfo(state);
-    } else {
-      // Only navigate if state is NOT undefined, but IS missing data
-      navigate("/", { replace: true, state: { error: "Missing booking details" }}); 
-    }
+    let state = location.state;
+    const checkin = new Date(state.checkin);
+    const checkout = new Date(state.checkout);
+    state.checkin = format(checkin, "yyyy-MM-dd");
+    state.checkout = format(checkout, "yyyy-MM-dd")
+    setPageInfo(state);
   }, [location.state]); // Added location.state as dependency
   
   /**
@@ -318,7 +317,7 @@ const Checkout = () => {
             error={errors.countryCodePhone}
           />
           
-          <InputField
+          {/* <InputField
             label="Phone number"
             type="text"
             name="phone"
@@ -327,7 +326,7 @@ const Checkout = () => {
             placeholder="Phone number"
             required={true}
             error={errors.phone}
-          />
+          /> */}
          
           <InputField
             label="Nationality"
