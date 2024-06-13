@@ -6,7 +6,7 @@ import isEmpty from 'utils/helpers';
 import { MAX_GUESTS_INPUT_VALUE } from 'utils/constants';
 import { formatDate } from 'utils/date-helpers';
 import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
-import { parse,format } from 'date-fns';
+import { parse, format } from 'date-fns';
 import PaginationController from 'components/ux/pagination-controller/PaginationController';
 import { SORTING_FILTER_LABELS } from 'utils/constants';
 import _debounce from 'lodash/debounce';
@@ -71,7 +71,7 @@ const HotelsSearch = () => {
     }
   });
 
-  const [locationInputValue, setLocationInputValue] = useState('pune');
+  const [locationInputValue, setLocationInputValue] = useState('');
   const [pageInfo, setPageInfo] = useState({});
   const [propertyName, setpropertyName] = useState('');
   const [propertyId, setPropertyId] = useState('');
@@ -96,6 +96,15 @@ const HotelsSearch = () => {
     },
   ]);
   const location = useLocation();
+
+  // Clear localStorage when the component mounts
+  useEffect(() => {
+    if (!location.state) {
+      localStorage.clear();
+      setTotal(0);
+      setTaxes(0);
+    }
+  }, []);
 
   const onDateChangeHandler = (ranges) => {
     setDateRange([ranges.selection]);
@@ -197,11 +206,11 @@ const HotelsSearch = () => {
         ]);
       }
       const totalDays = parse(checkOutDate, 'yyyy-MM-dd', new Date()).getDate() - parse(checkInDate, 'yyyy-MM-dd', new Date()).getDate();
-    const params = {
-      checkin: checkInDate,
-      property: propertyId,
-      checkout: checkOutDate
-    };
+      const params = {
+        checkin: checkInDate,
+        property: propertyId,
+        checkout: checkOutDate
+      };
       let pageInfo = { ...params, totaldays: totalDays };
       setPageInfo(pageInfo);
       fetchData(params, totalDays);
@@ -294,7 +303,13 @@ const HotelsSearch = () => {
       </div>
       <div className="my-4"></div>
       <div className="w-[180px]"></div>
-      <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} />
+      {searchResult.length === 0 ? (
+        <div className="flex justify-center items-center my-10">
+          <h2 className="text-gray-700 text-lg">Please enter your search criteria to see available rooms.</h2>
+        </div>
+      ) : (
+        <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} />
+      )}
       <div className="flex justify-end items-center mt-4 px-5">
         <div className="mr-4">
           <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>

@@ -32,6 +32,7 @@ const GlobalSearchBox = (props) => {
   const {
     propertyListInput,
     numGuestsInputValue,
+    setNumGuestsInputValue,
     isDatePickerVisible,
     handlePropertyNameChange,
     onNumGuestsInputChange,

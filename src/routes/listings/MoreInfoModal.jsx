@@ -30,15 +30,21 @@ const MoreInfoModal = ({ showModal, onClose, roomType, room_image, roomDescripti
   if (!showModal) return null; // Don't render if not shown
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out">
       <div className="absolute inset-0 bg-gray-800 opacity-75" onClick={onClose}></div>
-      <div className="bg-white rounded-lg shadow-lg z-10 max-w-4xl w-full">
+      <div className="bg-white rounded-lg shadow-lg z-10 max-w-4xl w-full animate-fadeIn overflow-hidden">
         <div className="flex flex-col md:flex-row">
-          <img src={room_image} alt={roomType} className="md:w-1/2 w-full h-64 object-cover rounded-t-lg md:rounded-l-lg md:rounded-t-none" />
-          <div className="p-6 flex flex-col justify-between">
+          <div className="relative md:w-1/2 w-full h-64 md:h-auto">
+            <img src={room_image} alt={roomType} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-50"></div>
+            <div className="absolute bottom-0 left-0 p-4">
+              <h2 className="text-2xl font-bold text-white">{roomType}</h2>
+            </div>
+          </div>
+          <div className="p-6 flex flex-col justify-between md:w-1/2 w-full">
             <div>
-              <h2 className="text-2xl font-bold mb-4 text-blue-600">{roomType}</h2>
-              <p className="text-gray-700 mb-6">{roomDescription}</p>
+              <h3 className="text-xl font-semibold mb-2">Room Description</h3>
+              <p className="text-gray-700 mb-4">{roomDescription}</p>
               <h3 className="text-xl font-semibold mb-2">Amenities</h3>
               <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {amenities.map((amenity, index) => (
@@ -49,7 +55,7 @@ const MoreInfoModal = ({ showModal, onClose, roomType, room_image, roomDescripti
                 ))}
               </ul>
             </div>
-            <button onClick={onClose} className="mt-6 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            <button onClick={onClose} className="mt-6 bg-brand hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded transition-colors duration-300 ease-in-out">
               Close
             </button>
           </div>

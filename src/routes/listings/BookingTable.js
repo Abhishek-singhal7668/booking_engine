@@ -98,6 +98,12 @@ const MoreInfoButton = tw.button`
   items-center
 `;
 
+const CellContent = tw.div`
+  flex
+  items-center
+  justify-center
+`;
+
 const BookingTable = ({ roomData, onSelectAmountChange, total, taxes }) => {
   // Load selected rooms state from localStorage
   const savedSelectedRooms = JSON.parse(localStorage.getItem('selectedRooms')) || {};
@@ -180,10 +186,12 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, sele
           </RoomInfo>
         </RoomTypeContainer>
       </Td>
-      <Td className="flex items-center">
-        <FontAwesomeIcon icon={faUser} className="text-lg" />
-        <span className='text-xl mx-3'>x</span>
-        {countOfGuests}
+      <Td>
+        <CellContent>
+          <FontAwesomeIcon icon={faUser} className="text-lg" />
+          <span className='text-xl mx-2'>x</span>
+          <span className='text-lg'>{countOfGuests}</span>
+        </CellContent>
       </Td>
       <Td>₹{totalPrice.toFixed(2)}</Td>
       <Td>

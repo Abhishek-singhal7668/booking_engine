@@ -44,6 +44,8 @@ const Checkout = () => {
     countryCodePhone: '',
     nationality: '',
     phone: '',
+    currency: '',
+    numberOfGuests: ''
   });
 
   useEffect(() => {
@@ -99,7 +101,7 @@ const Checkout = () => {
       const payload = {
         checkinDate: pageInfo.checkin,
         checkoutDate: pageInfo.checkout,
-        noOfGuest: 3, // Example value, replace with actual data
+        noOfGuest: formData.numberOfGuests,
         guestName: formData.name,
         guestEmail: formData.email,
         guestPhone: formData.phone,
@@ -115,6 +117,7 @@ const Checkout = () => {
         gst: pageInfo.tax,
         room_category: pageInfo.room_category,
         number_of_room: pageInfo.number_of_room, // Add number_of_room to the payload
+        currency: formData.currency // Added currency
       };
 
       const response = await axios.post(
@@ -128,17 +131,38 @@ const Checkout = () => {
         }
       );
 
-      const secondPayload = { pmsTransactionId };
-      const res = await axios.post(
-         'https://users-dash.bubbleapps.io/api/1.1/wf/booking_engine_response',
-        secondPayload, 
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer aec00c01ad9bf87e212367e8cd9be546'
+      // Second payload with additional fields
+      const roomCategories = bookingData.roomCategories || [];
+      for (const roomCategory of roomCategories) {
+        const secondPayload = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          amount: roomCategory.total,
+          checkin: pageInfo.checkin,
+          checkout: pageInfo.checkout,
+          room_category: roomCategory.room_type,
+          gst: roomCategory.taxes,
+          mealPlan: 0,
+          propertyId: pageInfo.propertyId,
+          currency: formData.currency,
+          numberOfGuests: formData.numberOfGuests,
+          countryCodePhone: formData.countryCodePhone,
+          address: formData.address,
+          nationality: formData.nationality
+        };
+
+        await axios.post(
+          'https://users-dash.bubbleapps.io/version-test/api/1.1/wf/booking_response/initialize',
+          secondPayload, 
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer aec00c01ad9bf87e212367e8cd9be546'
+            }
           }
-        }
-      );
+        );
+      }
 
       console.log('API Response:', response.data);
       const bookingDetails = {
@@ -169,6 +193,8 @@ const Checkout = () => {
     countryCodePhone: (value) => /^\d{1,4}$/.test(value),
     nationality: (value) => value.trim() !== '',
     phone: (value) => /^\d{10}$/.test(value),
+    currency: (value) => value.trim() !== '',
+    numberOfGuests: (value) => value.trim() !== ''
   };
 
   return (
@@ -267,6 +293,26 @@ const Checkout = () => {
             placeholder="Nationality"
             required={true}
             error={errors.nationality}
+          />
+          <InputField
+            label="Currency"
+            type="text"
+            name="currency"
+            value={formData.currency}
+            onChange={handleChange}
+            placeholder="Currency"
+            required={true}
+            error={errors.currency}
+          />
+          <InputField
+            label="Number of Guests"
+            type="text"
+            name="numberOfGuests"
+            value={formData.numberOfGuests}
+            onChange={handleChange}
+            placeholder="Number of Guests"
+            required={true}
+            error={errors.numberOfGuests}
           />
           <div className="flex items-center justify-between">
             <button
