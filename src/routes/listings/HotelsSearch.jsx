@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import GlobalSearchBox from 'components/global-search-box/GlobalSearchbox';
 import ResultsContainer from 'components/results-container/ResultsContainer';
 import { networkAdapter } from 'services/NetworkAdapter';
@@ -63,6 +63,7 @@ const Buton = tw.button`
 const HotelsSearch = () => {
   const navigate = useNavigate();
   const [isDatePickerVisible, setisDatePickerVisible] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const instance = axios.create({
     baseURL: 'https://finner.app/api/1.1/wf',
     headers: {
@@ -75,7 +76,7 @@ const HotelsSearch = () => {
   const [pageInfo, setPageInfo] = useState({});
   const [propertyName, setpropertyName] = useState('');
   const [propertyId, setPropertyId] = useState('');
-  const [numGuestsInputValue, setNumGuestsInputValue] = useState('');
+  const [numGuestsInputValue, setNumGuestsInputValue] = useState(0);
   const [availableCities, setAvailableCities] = useState([]);
   const [currentResultsPage, setCurrentResultsPage] = useState(1);
   const [filtersData, setFiltersData] = useState({
@@ -90,14 +91,13 @@ const HotelsSearch = () => {
   });
   const [dateRange, setDateRange] = useState([
     {
-      startDate: null,
-      endDate: null,
+      startDate: new Date(),
+      endDate: new Date(),
       key: 'selection',
     },
   ]);
   const location = useLocation();
 
-  // Clear localStorage when the component mounts
   useEffect(() => {
     if (!location.state) {
       localStorage.clear();
@@ -117,6 +117,7 @@ const HotelsSearch = () => {
     }
     const checkInDate = format(dateRange[0].startDate, "yyyy-MM-dd");
     const checkOutDate = format(dateRange[0].endDate, "yyyy-MM-dd");
+    setHasSearched(true); // Update the search status
     navigate('/hotels', {
       state: {
         numGuestsInputValue,
@@ -230,7 +231,9 @@ const HotelsSearch = () => {
   const handleSubmit = () => {
     navigate('/checkout', {
       state: {
-        ...pageInfo
+        ...pageInfo,
+      numGuestsInputValue,
+      roomCategories: searchResult.filter(room => room.number_of_rooms > 0)
       }
     });
   };
@@ -241,7 +244,9 @@ const HotelsSearch = () => {
     const isoDateString = date.toISOString();
     return `${isoDateString.substring(0, 19)}Z`;
   };
-
+  console.log(numGuestsInputValue);
+  console.log();
+  
   const onSelectAmountChange = (cnt, rate, roomType) => {
     const { total, taxes } = calculateRoomPrice(rate, cnt, pageInfo.totaldays);
     let tempRes = [...searchResult];
@@ -249,6 +254,7 @@ const HotelsSearch = () => {
     const index = tempRes.indexOf(changedRoom);
     tempRes[index].total = total;
     tempRes[index].taxes = taxes;
+    tempRes[index].number_of_rooms = cnt; 
     setSearchResult(tempRes);
     const { totalAllRooms, taxAllRooms } = calculateAllRooms(tempRes);
     setTotal(totalAllRooms);
@@ -257,7 +263,7 @@ const HotelsSearch = () => {
       ...prevPageInfo,
       total: totalAllRooms,
       tax: taxAllRooms,
-      room_category: roomType, // Set room category
+      room_category: tempRes, // Set room category
       number_of_rooms: cnt // Set number of rooms
     }));
 
@@ -308,21 +314,23 @@ const HotelsSearch = () => {
           <h2 className="text-gray-700 text-lg">Please enter your search criteria to see available rooms.</h2>
         </div>
       ) : (
-        <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} />
+        <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} numGuestsInputValue={numGuestsInputValue} />
       )}
-      <div className="flex justify-end items-center mt-4 px-5">
-        <div className="mr-4">
-          <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>
-          <h4>Tax: ₹{taxes.toFixed(2)}</h4>
-          <h4>Gross Total: ₹{total.toFixed(2)}</h4>
+      {hasSearched && (
+        <div className="flex justify-end items-center mt-4 px-5">
+          <div className="mr-4">
+            <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>
+            <h4>Tax: ₹{taxes.toFixed(2)}</h4>
+            <h4>Gross Total: ₹{total.toFixed(2)}</h4>
+          </div>
+          <Buton
+            onClick={handleSubmit}
+            className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded ml-4"
+          >
+            Pay {pageInfo.total}
+          </Buton>
         </div>
-        <Button
-          onClick={handleSubmit}
-          className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded ml-4"
-        >
-          Book now
-        </Button>
-      </div>
+      )}
     </div>
   );
 };

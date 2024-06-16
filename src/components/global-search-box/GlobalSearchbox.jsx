@@ -2,27 +2,10 @@ import { faLocationDot, faPerson } from '@fortawesome/free-solid-svg-icons';
 import DateRangePicker from 'components/ux/data-range-picker/DateRangePicker';
 import Input from 'components/ux/input/Input';
 import { Select } from 'antd';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import GuestSelector from './GuestSelector';
+import useOutsideClickHandler from 'hooks/useOutsideClickHandler';
 
-/**
- * GlobalSearchBox Component
- * Renders a search box with input fields for location, number of guests, and a date range picker.
- * It includes a search button to trigger the search based on the entered criteria.
- *
- * @param {Object} props - Props for the component.
- * @param {string} props.locationInputValue - The current value of the location input.
- * @param {string} props.numGuestsInputValue - The current value of the number of guests input.
- * @param {boolean} props.isDatePickerVisible - Flag to control the visibility of the date picker.
- * @param {Function} props.onLocationChangeInput - Callback for location input changes.
- * @param {Function} props.onNumGuestsInputChange - Callback for number of guests input changes.
- * @param {Function} props.onDatePickerIconClick - Callback for the date picker icon click event.
- * @param {Array} props.locationTypeheadResults - Results for the location input typeahead.
- * @param {Function} props.onSearchButtonAction - Callback for the search button click event.
- * @param {Function} props.onDateChangeHandler - Callback for handling date range changes.
- * @param {Function} props.setisDatePickerVisible - Callback to set the visibility state of the date picker.
- * @param {Object} props.dateRange - The selected date range.
- */
 const inputSyleMap = {
   SECONDARY: 'Finner__input--secondary',
   DARK: 'Finner__input--dark',
@@ -31,8 +14,6 @@ const inputSyleMap = {
 const GlobalSearchBox = (props) => {
   const {
     propertyListInput,
-    numGuestsInputValue,
-    setNumGuestsInputValue,
     isDatePickerVisible,
     handlePropertyNameChange,
     onNumGuestsInputChange,
@@ -45,16 +26,20 @@ const GlobalSearchBox = (props) => {
   } = props;
 
   const [guestSelectorOpen, setGuestSelectorOpen] = useState(false);
-  const [adults, setAdults] = useState(1); // Initial state for adults
-  const [children, setChildren] = useState(0); // Initial state for children
+  const [adults, setAdults] = useState(1);
+  const [children, setChildren] = useState(0);
+  const guestSelectorRef = useRef();
 
-  const handleGuestInputChange = (totalGuests) => {
-    onNumGuestsInputChange(totalGuests); // Pass the total number of guests to the parent component
-    setGuestSelectorOpen(false); // Close the GuestSelector component
+  useOutsideClickHandler(guestSelectorRef, () => setGuestSelectorOpen(false));
+
+  const handleGuestInputChange = (adults, children) => {
+    setAdults(adults);
+    setChildren(children);
+    onNumGuestsInputChange(adults + children);
   };
 
   return (
-    <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box">
+    <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box relative">
       <Select
         placeholder="Select Property"
         value={propertyListInput.find(
@@ -83,34 +68,36 @@ const GlobalSearchBox = (props) => {
         setisDatePickerVisible={setisDatePickerVisible}
         dateRange={dateRange}
       />
-      <Input
-        size="sm"
-        value={numGuestsInputValue} // Use the display value
-        onClick={() => setGuestSelectorOpen(true)}
-        placeholder="No. of guests"
-        icon={faPerson}
-        type="number"
-        readOnly
-      />
+      <div className="relative">
+        <Input
+          size="sm"
+          value={`${adults} adults, ${children} children`}
+          onClick={() => setGuestSelectorOpen(!guestSelectorOpen)}
+          placeholder="No. of guests"
+          icon={faPerson}
+          readOnly
+        />
+        {guestSelectorOpen && (
+          <div ref={guestSelectorRef} className="absolute top-12 left-0 w-full bg-white border border-gray-200 shadow-lg z-10">
+            <GuestSelector
+              onClose={(adults, children) => {
+                handleGuestInputChange(adults, children);
+                setGuestSelectorOpen(false);
+              }}
+              initialAdults={adults}
+              initialChildren={children}
+              showModal={guestSelectorOpen} // Pass showModal state
+              setShowModal={setGuestSelectorOpen} // Pass setter for showModal state
+            />
+          </div>
+        )}
+      </div>
       <button
         className="w-full md:w-auto sb__button--secondary bg-brand-secondary hover:bg-yellow-600 px-4 py-2 text-white"
         onClick={onSearchButtonAction}
       >
         SEARCH
       </button>
-      {guestSelectorOpen && (
-        <GuestSelector
-          onClose={(adults, children) => {
-            const totalGuests = adults + children; // Calculate total guests
-            onNumGuestsInputChange(totalGuests);    // Pass the total number
-            setGuestSelectorOpen(false);
-          }}
-          initialAdults={1}
-          initialChildren={0}
-          showModal={guestSelectorOpen} // Pass showModal state
-          setShowModal={setGuestSelectorOpen} // Pass setter for showModal state
-        />
-      )}
     </div>
   );
 };

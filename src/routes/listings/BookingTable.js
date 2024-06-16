@@ -5,6 +5,8 @@ import { faUser, faPlusSquare } from '@fortawesome/free-solid-svg-icons';
 import calculateRoomPrice from 'utils/calculateRoomPrice';
 import MoreInfoModal from './MoreInfoModal';
 import amenities from './amenities.json';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Table = tw.table`
   w-full
@@ -102,16 +104,15 @@ const CellContent = tw.div`
   flex
   items-center
   justify-center
+  space-x-2
 `;
 
-const BookingTable = ({ roomData, onSelectAmountChange, total, taxes }) => {
-  // Load selected rooms state from localStorage
+const BookingTable = ({ roomData, onSelectAmountChange, total, taxes, numGuestsInputValue }) => {
   const savedSelectedRooms = JSON.parse(localStorage.getItem('selectedRooms')) || {};
 
   const [selectedRoomsState, setSelectedRoomsState] = useState(savedSelectedRooms);
 
   useEffect(() => {
-    // Save selected rooms state to localStorage whenever it changes
     localStorage.setItem('selectedRooms', JSON.stringify(selectedRoomsState));
   }, [selectedRoomsState]);
 
@@ -148,15 +149,17 @@ const BookingTable = ({ roomData, onSelectAmountChange, total, taxes }) => {
               countOfGuests={e.standard_occupancy}
               room_image={e.room_image}
               roomData={roomData}
+              numGuestsInputValue={numGuestsInputValue}
             />
           ))
         )}
       </TBody>
+      <ToastContainer />
     </Table>
   );
 };
 
-const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, selectedRooms, onSelectChange, total, taxes, countOfGuests, room_image, roomData }) => {
+const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, selectedRooms, onSelectChange, total, taxes, countOfGuests, room_image, roomData, numGuestsInputValue }) => {
   const [showModal, setShowModal] = useState(false);
 
   const roomInfo = useMemo(() => {
@@ -168,6 +171,10 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, sele
     return calculateRoomPrice(perNightPrice, selectedRooms, roomData[0].totaldays);
   }, [selectedRooms, perNightPrice, roomData]);
 
+  const totalCapacity = useMemo(() => {
+    return selectedRooms * countOfGuests;
+  }, [selectedRooms, countOfGuests]);
+
   return (
     <Tr>
       <Td>
@@ -175,7 +182,7 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, sele
           {room_image ? (
             <img src={room_image} alt={roomType} className="w-16 h-16 rounded-lg object-cover" />
           ) : (
-            <div className="w-16 h-16 rounded-lg bg-gray-300"></div> // Placeholder
+            <div className="w-16 h-16 rounded-lg bg-gray-300"></div>
           )}
           <RoomInfo>
             <RoomName>{roomType}</RoomName>
@@ -189,7 +196,7 @@ const RoomInfoRow = ({ roomType, totalPrice, perNightPrice, availableRooms, sele
       <Td>
         <CellContent>
           <FontAwesomeIcon icon={faUser} className="text-lg" />
-          <span className='text-xl mx-2'>x</span>
+          <span className='text-xl mx-1'>x</span>
           <span className='text-lg'>{countOfGuests}</span>
         </CellContent>
       </Td>

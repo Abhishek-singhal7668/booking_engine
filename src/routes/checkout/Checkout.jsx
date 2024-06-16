@@ -1,35 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import FinalBookingSummary from './components/final-booking-summary/FinalBookingSummary';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { getReadableMonthFormat } from 'utils/date-helpers';
-import { useSearchParams } from 'react-router-dom';
-import { AuthContext } from 'contexts/AuthContext';
-import { useContext } from 'react';
-import { networkAdapter } from 'services/NetworkAdapter';
+import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 import Loader from 'components/ux/loader/loader';
 import Toast from 'components/ux/toast/Toast';
-import Schemas from 'utils/validation-schemas';
-import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
-import { parse, format } from 'date-fns';
-import HotelsSearch from 'routes/listings/HotelsSearch';
+//import InputField from 'components/ux/input/InputField';
+import RazorpayCheckout from 'components/RazorpayCheckout';
+import { format } from 'date-fns';
 
-/**
- * Checkout component for processing payments and collecting user information.
- *
- * @returns {JSX.Element} The rendered Checkout component.
- */
 const Checkout = () => {
   const [errors, setErrors] = useState({});
   const [pageInfo, setPageInfo] = useState({});
   const [bookingData, setBookingData] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [toastMessage, setToastMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false); 
-  const [isSubmitDisabled, setIsSubmitDisabled] = useState(false); 
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitDisabled, setIsSubmitDisabled] = useState(false);
+
   const dismissToast = () => {
     setToastMessage('');
   };
@@ -44,25 +32,24 @@ const Checkout = () => {
     countryCodePhone: '',
     nationality: '',
     phone: '',
-    currency: '',
-    numberOfGuests: ''
   });
 
   useEffect(() => {
     const data = location.state || JSON.parse(localStorage.getItem('bookingData'));
     if (data) {
       setBookingData(data);
-      setPageInfo(data); // Make sure pageInfo is set correctly
+      let state = { ...data };
+      const checkin = new Date(state.checkin);
+      const checkout = new Date(state.checkout);
+      state.checkin = format(checkin, "yyyy-MM-dd");
+      state.checkout = format(checkout, "yyyy-MM-dd");
+      setPageInfo(state);
+      console.log('Page Info:', state);  // Add this line to debug
     } else {
       console.error('No booking data available');
     }
-    let state = location.state;
-    const checkin = new Date(state.checkin);
-    const checkout = new Date(state.checkout);
-    state.checkin = format(checkin, "yyyy-MM-dd");
-    state.checkout = format(checkout, "yyyy-MM-dd");
-    setPageInfo(state);
   }, [location.state]);
+  
 
   if (!bookingData) {
     return <div>Loading...</div>;
@@ -97,32 +84,33 @@ const Checkout = () => {
     setIsSubmitting(true);
   
     try {
-      const pmsTransactionId = uuidv4(); // Generate a random transaction ID
+      const pmsTransactionId = uuidv4();
       const payload = {
         checkinDate: pageInfo.checkin,
         checkoutDate: pageInfo.checkout,
-        noOfGuest: formData.numberOfGuests,
+        noOfGuest: location.state.numGuestsInputValue,
         guestName: formData.name,
         guestEmail: formData.email,
         guestPhone: formData.phone,
         roomId: pageInfo.property,
-        propertyId: pageInfo.propertyId,
-        mealPlan: 0, // Example value, replace with actual data
+        propertyId: "1632210485323x815939605017133000",
+        mealPlan: 0,
         nationality: formData.nationality,
-        token_amount: pageInfo.total, // Example value, replace with actual data
-        amount_percent_received: 0, // Example value, replace with actual data
+        token_amount: pageInfo.total,
+        amount_percent_received: 0,
         countryCodePhone: formData.countryCodePhone,
         amount: pageInfo.total,
         pmsTransactionId: pmsTransactionId,
         gst: pageInfo.tax,
         room_category: pageInfo.room_category,
-        number_of_room: pageInfo.number_of_room, // Add number_of_room to the payload
-        currency: formData.currency // Added currency
+        number_of_room: pageInfo.number_of_rooms,
       };
-
+  
+      console.log("Creating new reservation with payload:", payload);
+  
       const response = await axios.post(
         'https://users-dash.bubbleapps.io/api/1.1/wf/create_new_reservation',
-        payload, 
+        payload,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -130,58 +118,86 @@ const Checkout = () => {
           }
         }
       );
-
-      // Second payload with additional fields
-      const roomCategories = bookingData.roomCategories || [];
-      for (const roomCategory of roomCategories) {
-        const secondPayload = {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          amount: roomCategory.total,
-          checkin: pageInfo.checkin,
-          checkout: pageInfo.checkout,
-          room_category: roomCategory.room_type,
-          gst: roomCategory.taxes,
-          mealPlan: 0,
-          propertyId: pageInfo.propertyId,
-          currency: formData.currency,
-          numberOfGuests: formData.numberOfGuests,
-          countryCodePhone: formData.countryCodePhone,
-          address: formData.address,
-          nationality: formData.nationality
-        };
-
-        await axios.post(
-          'https://users-dash.bubbleapps.io/version-test/api/1.1/wf/booking_response/initialize',
-          secondPayload, 
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer aec00c01ad9bf87e212367e8cd9be546'
-            }
+  
+      console.log("New reservation response:", response.data);
+  
+      if (bookingData && bookingData.roomCategories && bookingData.roomCategories.length > 0) {
+        console.log("Booking data:", bookingData);
+        const bookingPromises = bookingData.roomCategories.flatMap((roomCategory, index) => {
+          const roomAmount = roomCategory.total / roomCategory.number_of_rooms;
+          const roomGst = roomCategory.taxes / roomCategory.number_of_rooms;
+  
+          const requests = [];
+          for (let i = 0; i < roomCategory.number_of_rooms; i++) {
+            const secondPayload = {
+              name: formData.name,
+              email: formData.email,
+              phone: formData.phone,
+              amount: roomAmount,
+              checkin: pageInfo.checkin,
+              checkout: pageInfo.checkout,
+              room_category: roomCategory.room_type,
+              gst: roomGst,
+              mealPlan: 0,
+              propertyId: pageInfo.propertyId,
+              currency: 'INR',
+              noOfGuest: location.state.numGuestsInputValue,
+              countryCodePhone: formData.countryCodePhone,
+              guest_address: formData.address,
+              nationality: formData.nationality,
+              pmsTransactionId: pmsTransactionId
+            };
+  
+  
+            console.log(`Sending booking response for room category ${index + 1}, room ${i + 1}:`, secondPayload);
+  
+            requests.push(
+              axios.post(
+                'https://users-dash.bubbleapps.io/version-test/api/1.1/wf/booking_response/',
+                secondPayload,
+                {
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer aec00c01ad9bf87e212367e8cd9be546'
+                  }
+                }
+              ).then(response => {
+                console.log(`Response for room category ${index + 1}, room ${i + 1}:`, response.data);
+              }).catch(error => {
+                console.error(`Error for room category ${index + 1}, room ${i + 1}:`, error);
+              })
+            );
           }
-        );
+          return requests;
+        });
+  
+        await Promise.all(bookingPromises);
+        console.log("All booking responses sent successfully.");
+      } else {
+        console.warn("No room categories found in bookingData.");
       }
-
-      console.log('API Response:', response.data);
+  
       const bookingDetails = {
         checkInDate: pageInfo.checkin,
         checkOutDate: pageInfo.checkout,
         totalAmount: pageInfo.total,
-       ...formData,
+        ...formData,
         hotel: pageInfo.property,
       };
+  
+      console.log("Navigating to booking confirmation with details:", bookingDetails);
   
       navigate('/booking-confirmation', {
         state: { confirmationData: { bookingDetails } }
       });
     } catch (error) {
+      console.error("Error during booking process:", error);
       setToastMessage('Payment failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
+  
 
   const validationSchema = {
     email: (value) => /\S+@\S+\.\S+/.test(value),
@@ -193,8 +209,6 @@ const Checkout = () => {
     countryCodePhone: (value) => /^\d{1,4}$/.test(value),
     nationality: (value) => value.trim() !== '',
     phone: (value) => /^\d{10}$/.test(value),
-    currency: (value) => value.trim() !== '',
-    numberOfGuests: (value) => value.trim() !== ''
   };
 
   return (
@@ -294,52 +308,23 @@ const Checkout = () => {
             required={true}
             error={errors.nationality}
           />
-          <InputField
-            label="Currency"
-            type="text"
-            name="currency"
-            value={formData.currency}
-            onChange={handleChange}
-            placeholder="Currency"
-            required={true}
-            error={errors.currency}
-          />
-          <InputField
-            label="Number of Guests"
-            type="text"
-            name="numberOfGuests"
-            value={formData.numberOfGuests}
-            onChange={handleChange}
-            placeholder="Number of Guests"
-            required={true}
-            error={errors.numberOfGuests}
-          />
-          <div className="flex items-center justify-between">
-            <button
-              className={`bg-brand hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full transition duration-300 ${
-                isSubmitDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
-              }`}
-              type="submit"
-              disabled={isSubmitDisabled}
-            >
-              Pay ₹ {pageInfo.total}
-            </button>
-          </div>
-        </form>
-        {toastMessage && (
-          <div className="my-4">
-            <Toast
-              message={toastMessage}
-              type={'error'}
-              dismissError={dismissToast}
+          <div className="flex justify-between items-center">
+          <RazorpayCheckout 
+              pageInfo={pageInfo}
+              formData={formData}
+              onPaymentSuccess={(responseData) => {
+                navigate('/booking-confirmation', {
+                  state: { confirmationData: { bookingDetails: responseData } },
+                });
+              }}
             />
           </div>
-        )}
+        </form>
+        {toastMessage && <Toast message={toastMessage} onClose={dismissToast} />}
       </div>
     </div>
   );
 };
-
 const InputField = ({
   label,
   type,
@@ -375,5 +360,4 @@ const InputField = ({
     )}
   </div>
 );
-
 export default Checkout;
