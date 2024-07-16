@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import HamburgerMenu from 'components/hamburger-menu/HamburgerMenu';
@@ -17,10 +16,11 @@ const GlobalNavbar = () => {
 
   return (
     <div className="relative flex flex-wrap justify-between items-center px-4 md:px-12 global-navbar__container bg-brand brand-divider-bottom shadow-md">
-      <div className="flex">
+      <div className="flex items-center">
         <Link to="/">
           <img src={""} alt="" className="" />
         </Link>
+        <span className="ml-4 text-white text-2xl font-bold tracking-wide">House of Kapaali</span>
       </div>
       <ul className="list-none hidden md:flex">
         <NavbarItems isAuthenticated={isAuthenticated} />

@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import GlobalSearchBox from 'components/global-search-box/GlobalSearchbox';
-import ResultsContainer from 'components/results-container/ResultsContainer';
-import { networkAdapter } from 'services/NetworkAdapter';
-import isEmpty from 'utils/helpers';
-import { MAX_GUESTS_INPUT_VALUE } from 'utils/constants';
-import { formatDate } from 'utils/date-helpers';
-import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { parse, format } from 'date-fns';
-import PaginationController from 'components/ux/pagination-controller/PaginationController';
-import { SORTING_FILTER_LABELS } from 'utils/constants';
-import _debounce from 'lodash/debounce';
 import axios from 'axios';
 import BookingTable from './BookingTable';
-import { Button } from 'antd';
 import properties from './properties.json';
 import calculateRoomPrice from 'utils/calculateRoomPrice';
 import tw from 'tailwind-styled-components';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import calculateRoomPriceWithMealPlans from 'utils/calculateRoomPriceWithMealPlans';
+
+const safeJsonParse = (value, defaultValue) => {
+  try {
+    return value ? JSON.parse(value) : defaultValue;
+  } catch (e) {
+    console.error("Error parsing JSON", e);
+    return defaultValue;
+  }
+};
 
 const Container = tw.div`
   w-full
@@ -30,21 +33,7 @@ const Container = tw.div`
   sm:flex-row
   sm:items-center
   sm:justify-between
-`;
-
-const TotalsWrapper = tw.div`
-  flex
-  flex-col
-  items-end
-  mb-4
-  sm:mb-0
-  sm:mr-4
-`;
-
-const ButtonWrapper = tw.div`
-  flex
-  justify-end
-  sm:justify-start
+  sm:p-6
 `;
 
 const Buton = tw.button`
@@ -71,6 +60,7 @@ const HotelsSearch = () => {
       'Content-Type': 'application/json'
     }
   });
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [locationInputValue, setLocationInputValue] = useState('');
   const [pageInfo, setPageInfo] = useState({});
@@ -92,7 +82,7 @@ const HotelsSearch = () => {
   const [dateRange, setDateRange] = useState([
     {
       startDate: new Date(),
-      endDate: new Date(),
+      endDate: new Date(new Date().setDate(new Date().getDate() + 1)),
       key: 'selection',
     },
   ]);
@@ -101,23 +91,42 @@ const HotelsSearch = () => {
   useEffect(() => {
     if (!location.state) {
       localStorage.clear();
+      
       setTotal(0);
       setTaxes(0);
     }
   }, []);
-
+  useEffect(() => {
+    localStorage.clear();
+    setHasSearched(false);
+  }, []);
+  
   const onDateChangeHandler = (ranges) => {
     setDateRange([ranges.selection]);
   };
+  const [selectedRoomsState, setSelectedRoomsState] = useState({});
+  const [selectedPlansState, setSelectedPlansState] = useState({});
 
   const onSearchButtonAction = () => {
-    if (dateRange[0].startDate === dateRange[0].endDate) {
-      alert('Please select a valid date range');
+    if (!propertyName) {
+      toast.error('Property field cannot be empty');
       return;
     }
+    if (!dateRange[0].startDate || !dateRange[0].endDate || dateRange[0].startDate === dateRange[0].endDate) {
+      toast.error('Please select a valid date range');
+      return;
+    }
+    setTotal(0);
+    setTaxes(0);
+    setSearchResult([]);
+    setSelectedRoomsState({});
+    setSelectedRooms({});
+    setSelectedPlansState({});
+  localStorage.clear();
     const checkInDate = format(dateRange[0].startDate, "yyyy-MM-dd");
     const checkOutDate = format(dateRange[0].endDate, "yyyy-MM-dd");
     setHasSearched(true); // Update the search status
+    //setIsInitialLoad(false);
     navigate('/hotels', {
       state: {
         numGuestsInputValue,
@@ -134,7 +143,7 @@ const HotelsSearch = () => {
   };
 
   const onNumGuestsInputChange = (numGuests) => {
-    if (numGuests < MAX_GUESTS_INPUT_VALUE && numGuests > 0) {
+    if (numGuests < 500 && numGuests > 0) {
       setNumGuestsInputValue(numGuests);
     }
   };
@@ -144,58 +153,119 @@ const HotelsSearch = () => {
   const fetchData = async (params, totalDays) => {
     try {
       const res = await instance.get('/booking_engine_API', { params });
-      const processedResult = await processResult(res.data.response.room, totalDays);
-      setSearchResult(processedResult);
+      if (res.data.status === 'success') {
+        const roomsData = await processResult(res.data.response.room, totalDays);
+        setSearchResult(roomsData);
+        
+        // Fetch meal plans for each room category, passing params
+        await fetchMealPlansForRooms(roomsData, params);
+
+      } else {
+        console.error('Failed to fetch room data:', res.data);
+      }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching room data:', error);
     }
   };
 
-  const processResult = async (data, totalDays) => {
-    const cleanRooms = data?.filter(room => room.cleaning_status !== 'Dirty');
-    const groupedRooms = cleanRooms?.reduce((acc, room) => {
-      if (!acc[room.Room_category_new_deprecate]) {
-        acc[room.Room_category_new_deprecate] = {
-          room_type: room.Room_category_new_deprecate,
-          number_of_avaiable_rooms: 1,
-          rate: room.rack_rate,
-          stand_occu: room.standard_occupancy,
-          max_occ: room.max_occupancy,
-          totaldays: totalDays,
-          standard_occupancy: room.standard_occupancy,
-          room_image: room.room_image,
-          id: room.parent_property
-        };
-      } else {
-        acc[room.Room_category_new_deprecate].number_of_avaiable_rooms++;
-      }
-      return acc;
-    }, {});
-    if (groupedRooms === null || groupedRooms === undefined) {
-      return;
-    }
+  const fetchMealPlansForRooms = async (rooms, params) => {
+    const headers = {
+      'Authorization': `Bearer aec00c01ad9bf87e212367e8cd9be546`,
+      'Content-Type': 'application/json'
+    };
+  
+    const mealPlansPromises = rooms.map(room => {
+      const body = {
+        room_category: room.room_category,
+        start_date: params.checkin,
+        end_date: params.checkout,
+        property_id: params.property
+      };
+  
+      return axios.post(
+        'https://finner.app/api/1.1/wf/get_category_meal_plan',
+        body,
+        { headers }
+      ).catch(error => {
+        console.error('Error fetching meal plans:', error.response?.data);
+        return null;
+      });
+    });
+  
+    const mealPlansResponses = await Promise.all(mealPlansPromises);
+  
+    const updatedRooms = rooms.map((room, index) => {
+      const mealPlans = mealPlansResponses[index]?.data.response.data || [];
+      return {
+        ...room,
+        mealPlans,
+        mealPlanPrices: mealPlans.map(plan => ({
+          id: plan._id,
+          rate: plan.rate
+        }))
+      };
+    });
+  
+    setSearchResult(updatedRooms);
+  };
+  
 
-    const roomTypeArray = Object.values(groupedRooms);
-    return roomTypeArray;
+  const processResult = async (data, totalDays) => {
+    const groupedRooms = data.filter(room => room.cleaning_status !== 'Dirty')
+      .reduce((acc, room) => {
+        const roomKey = room.Room_category_new_deprecate;
+        if (!acc[roomKey]) {
+          acc[roomKey] = {
+            room_type: roomKey,
+            number_of_avaiable_rooms: 1,
+            rate: room.rack_rate,
+            standard_occupancy: room.standard_occupancy,
+            max_occupancy: room.max_occupancy,
+            totaldays: totalDays,
+            room_category: room.category_room_future,
+            room_image: room.room_image,
+            id: room.parent_property,
+            mealPlans: []  // Placeholder for meal plans
+          };
+        } else {
+          acc[roomKey].number_of_avaiable_rooms++;
+        }
+        return acc;
+      }, {});
+
+    return Object.values(groupedRooms);
   };
 
   const [total, setTotal] = useState(() => {
-    const savedTotal = localStorage.getItem('total');
-    return savedTotal !== null ? JSON.parse(savedTotal) : 0;
+    const savedTotal = safeJsonParse(localStorage.getItem('total'), 0);
+    return savedTotal;
   });
 
   const [taxes, setTaxes] = useState(() => {
-    const savedTaxes = localStorage.getItem('taxes');
-    return savedTaxes !== null ? JSON.parse(savedTaxes) : 0;
+    const savedTaxes = safeJsonParse(localStorage.getItem('taxes'), 0);
+    return savedTaxes;
   });
 
   useEffect(() => {
-    if (location.state) {
-      const { propertyId, numGuest, checkInDate, checkOutDate } = location.state;
+    if (!location.state) {
+      localStorage.clear();
+     
+    setHasSearched(false);
+    setTotal(0);
+  setTaxes(0);
+  setSearchResult([]);
+  setSelectedRoomsState({});
+  setSelectedRooms({});
+  setSelectedPlansState({});
+  localStorage.clear(); 
+      setIsInitialLoad(true);
+    } else {
+      const { propertyId, numGuest, checkInDate, checkOutDate, propertyName } = location.state;
       if (numGuest) {
         setNumGuestsInputValue(numGuest.toString());
       }
       setPropertyId(propertyId);
+      setpropertyName(propertyName);
       setLocationInputValue("city");
       if (checkInDate && checkOutDate) {
         setDateRange([
@@ -206,7 +276,7 @@ const HotelsSearch = () => {
           },
         ]);
       }
-      const totalDays = parse(checkOutDate, 'yyyy-MM-dd', new Date()).getDate() - parse(checkInDate, 'yyyy-MM-dd', new Date()).getDate();
+      const totalDays = (new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24);
       const params = {
         checkin: checkInDate,
         property: propertyId,
@@ -215,8 +285,10 @@ const HotelsSearch = () => {
       let pageInfo = { ...params, totaldays: totalDays };
       setPageInfo(pageInfo);
       fetchData(params, totalDays);
+      setIsInitialLoad(false);
     }
   }, [location]);
+  
 
   const handlePropertyNameChange = (propertyName) => {
     const selectedProperty = properties.find(property => property.title === propertyName);
@@ -227,50 +299,67 @@ const HotelsSearch = () => {
   };
 
   const [propertyListInput, setPropertyListInput] = useState(properties);
-
+  const [selectedRooms, setSelectedRooms] = useState({});
   const handleSubmit = () => {
     navigate('/checkout', {
       state: {
         ...pageInfo,
-      numGuestsInputValue,
-      roomCategories: searchResult.filter(room => room.number_of_rooms > 0)
+        numGuestsInputValue,
+        roomCategories: searchResult.filter(room => room.number_of_rooms > 0),
+        selectedRooms
       }
     });
   };
 
-  const parseIsoDate = (originalDateString) => {
-    const [day, month, year] = originalDateString.split('/').map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day, 0, 0));
-    const isoDateString = date.toISOString();
-    return `${isoDateString.substring(0, 19)}Z`;
-  };
-  console.log(numGuestsInputValue);
-  console.log();
+  const onSelectAmountChange = (cnt, rate, roomType, selectedPlans) => {
+    const room = searchResult.find(e => e.room_type === roomType);
+    console.log("Room found:", room);
   
-  const onSelectAmountChange = (cnt, rate, roomType) => {
-    const { total, taxes } = calculateRoomPrice(rate, cnt, pageInfo.totaldays);
-    let tempRes = [...searchResult];
-    let changedRoom = tempRes.find((e) => e.room_type === roomType);
+    const { total, taxes } = calculateRoomPriceWithMealPlans(room, selectedPlans);
+    console.log("Calculated Total:", total);
+    console.log("Calculated Taxes:", taxes);
+  
+    setSelectedRooms(prevState => {
+      const newState = {
+        ...prevState,
+        [roomType]: selectedPlans
+      };
+      console.log("Updated Selected Rooms State:", newState);
+      return newState;
+    });
+  
+    const tempRes = [...searchResult];
+    const changedRoom = tempRes.find((e) => e.room_type === roomType);
     const index = tempRes.indexOf(changedRoom);
     tempRes[index].total = total;
     tempRes[index].taxes = taxes;
-    tempRes[index].number_of_rooms = cnt; 
+    tempRes[index].number_of_rooms = cnt;
+    console.log("Updated Room:", tempRes[index]);
     setSearchResult(tempRes);
+    console.log("Updated Search Result:", tempRes);
+  
     const { totalAllRooms, taxAllRooms } = calculateAllRooms(tempRes);
+    console.log("Total All Rooms:", totalAllRooms);
+    console.log("Tax All Rooms:", taxAllRooms);
     setTotal(totalAllRooms);
     setTaxes(taxAllRooms);
-    setPageInfo((prevPageInfo) => ({
-      ...prevPageInfo,
-      total: totalAllRooms,
-      tax: taxAllRooms,
-      room_category: tempRes, // Set room category
-      number_of_rooms: cnt // Set number of rooms
-    }));
-
-    // Save total and taxes to localStorage
+  
+    setPageInfo((prevPageInfo) => {
+      const newPageInfo = {
+        ...prevPageInfo,
+        total: totalAllRooms,
+        tax: taxAllRooms,
+        room_category: tempRes,
+        number_of_rooms: cnt
+      };
+      console.log("Updated Page Info:", newPageInfo);
+      return newPageInfo;
+    });
+  
     localStorage.setItem('total', JSON.stringify(totalAllRooms));
     localStorage.setItem('taxes', JSON.stringify(taxAllRooms));
   };
+  
 
   const calculateAllRooms = () => {
     let tot = 0;
@@ -309,28 +398,37 @@ const HotelsSearch = () => {
       </div>
       <div className="my-4"></div>
       <div className="w-[180px]"></div>
-      {searchResult.length === 0 ? (
-        <div className="flex justify-center items-center my-10">
-          <h2 className="text-gray-700 text-lg">Please enter your search criteria to see available rooms.</h2>
-        </div>
-      ) : (
-        <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} numGuestsInputValue={numGuestsInputValue} />
-      )}
+      {!hasSearched ? (
+  <div className="flex justify-center items-center my-10">
+    <h2 className="text-gray-700 text-lg">Please enter your search criteria to see available rooms.</h2>
+  </div>
+) : (
+  <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} numGuestsInputValue={numGuestsInputValue} selectedRooms={selectedRooms}
+  setSelectedRooms={setSelectedRooms} selectedPlansState={selectedPlansState} 
+    setSelectedPlansState={setSelectedPlansState} /> 
+)}
+
       {hasSearched && (
-        <div className="flex justify-end items-center mt-4 px-5">
-          <div className="mr-4">
-            <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{(total - taxes).toFixed(2)}</h4>
-            <h4>Tax: ₹{taxes.toFixed(2)}</h4>
-            <h4>Gross Total: ₹{total.toFixed(2)}</h4>
-          </div>
-          <Buton
-            onClick={handleSubmit}
-            className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded ml-4"
-          >
-            Pay {pageInfo.total}
-          </Buton>
-        </div>
-      )}
+  <div className="flex justify-end items-center mt-4 px-5 ">
+    <div className="w-full max-w-sm p-4 bg-white shadow-md rounded-lg text-right">
+      <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{total ? (total - taxes).toFixed(2) : 0}</h4>
+      <h4>Tax: ₹{taxes ? taxes.toFixed(2) : 0}</h4>
+      <h4>Gross Total: ₹{total ? total.toFixed(2) : 0}</h4>
+      <Buton
+        onClick={handleSubmit}
+        disabled={total <= 0} 
+        className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded mt-4"
+      >
+        Book Now
+      </Buton>
+    </div>
+    {/* Add this div for additional space */}
+    <div className="mt-20"></div>
+  </div>
+)}
+
+
+
     </div>
   );
 };

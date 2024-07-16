@@ -41,21 +41,21 @@ const MoreInfoModal = ({ showModal, onClose, roomType, room_image, roomDescripti
               <h2 className="text-2xl font-bold text-white">{roomType}</h2>
             </div>
           </div>
-          <div className="p-6 flex flex-col justify-between md:w-1/2 w-full">
+          <div className="p-4 md:p-6 flex flex-col justify-between md:w-1/2 w-full">
             <div>
-              <h3 className="text-xl font-semibold mb-2">Room Description</h3>
-              <p className="text-gray-700 mb-4">{roomDescription}</p>
-              <h3 className="text-xl font-semibold mb-2">Amenities</h3>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <h3 className="text-xl font-semibold mb-2 md:mb-4">Room Description</h3>
+              <p className="text-gray-700 mb-4 md:mb-6">{roomDescription}</p>
+              <h3 className="text-xl font-semibold mb-2 md:mb-4">Amenities</h3>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4">
                 {amenities.map((amenity, index) => (
-                  <li key={index} className="flex items-center">
-                    <FontAwesomeIcon icon={amenityIcons[amenity]} className="mr-2 text-blue-500" />
+                  <li key={index} className="flex items-center space-x-2">
+                    <FontAwesomeIcon icon={amenityIcons[amenity]} className="text-blue-500 text-lg" />
                     <span className="text-gray-700">{amenity}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <button onClick={onClose} className="mt-6 bg-brand hover:bg-brand-secondary text-white font-bold py-2 px-4 rounded transition-colors duration-300 ease-in-out">
+            <button onClick={onClose} className="mt-4 md:mt-6 bg-blue-600 hover:bg-blue-800 text-white font-bold py-2 px-4 rounded transition-colors duration-300 ease-in-out">
               Close
             </button>
           </div>

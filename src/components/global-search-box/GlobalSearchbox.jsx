@@ -39,8 +39,9 @@ const GlobalSearchBox = (props) => {
   };
 
   return (
-    <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box relative">
+    <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box relative p-2 sm:p-4">
       <Select
+       className="w-full sm:w-auto mb-4 sm:mb-0"
         placeholder="Select Property"
         value={propertyListInput.find(
           (property) => property.title === defaultPropertyValue
@@ -62,14 +63,16 @@ const GlobalSearchBox = (props) => {
         ))}
       </Select>
       <DateRangePicker
+         className="w-full sm:w-auto mb-4 sm:mb-0"
         isDatePickerVisible={isDatePickerVisible}
         onDatePickerIconClick={onDatePickerIconClick}
         onDateChangeHandler={onDateChangeHandler}
         setisDatePickerVisible={setisDatePickerVisible}
         dateRange={dateRange}
       />
-      <div className="relative">
+      <div className="relative w-full sm:w-auto mb-4 sm:mb-0">
         <Input
+          className="w-full"
           size="sm"
           value={`${adults} adults, ${children} children`}
           onClick={() => setGuestSelectorOpen(!guestSelectorOpen)}
