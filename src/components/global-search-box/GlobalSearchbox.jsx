@@ -41,7 +41,7 @@ const GlobalSearchBox = (props) => {
   return (
     <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box relative p-2 sm:p-4">
       <Select
-       className="w-full sm:w-auto mb-4 sm:mb-0"
+        className="w-full sm:w-auto mb-4 sm:mb-0"
         placeholder="Select Property"
         value={propertyListInput.find(
           (property) => property.title === defaultPropertyValue
@@ -54,6 +54,7 @@ const GlobalSearchBox = (props) => {
           lineHeight: '43.2px', // Vertical align text
           border: '2px solid gold', // Golden border
           borderRadius: '0px', // Square corners
+          boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)', // Add subtle shadow
         }} // Add custom styles for the square box
       >
         {propertyListInput.map((property, index) => (
@@ -63,7 +64,7 @@ const GlobalSearchBox = (props) => {
         ))}
       </Select>
       <DateRangePicker
-         className="w-full sm:w-auto mb-4 sm:mb-0"
+        className="w-full sm:w-auto mb-4 sm:mb-0"
         isDatePickerVisible={isDatePickerVisible}
         onDatePickerIconClick={onDatePickerIconClick}
         onDateChangeHandler={onDateChangeHandler}

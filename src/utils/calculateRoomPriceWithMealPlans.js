@@ -10,7 +10,7 @@ const calculateRoomPriceWithMealPlans = (room, selectedPlans = {}) => {
       return plan ? { rate: plan.rate, count: selectedPlans[planId] } : { rate: 0, count: 0 };
     });
   
-    console.log("Selected Plan Prices:", selectedPlanPrices);
+    console.log("Selected Plan Prices:", selectedPlanPrices); 
   
     const totalPlanPrice = selectedPlanPrices.reduce((total, { rate, count }) => total + (rate * count), 0);
     console.log("Total Plan Price:", totalPlanPrice);

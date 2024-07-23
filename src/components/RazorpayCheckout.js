@@ -5,6 +5,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
 import Loader from 'components/ux/loader/loader';
 
+const ROOT_URL = 'https://bookingengine.thefinner.com';
+
 const RazorpayCheckout = ({ pageInfo, formData, isFormValid }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -29,7 +31,7 @@ const RazorpayCheckout = ({ pageInfo, formData, isFormValid }) => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:8080/api/payment/create_order', {
+      const response = await axios.post(`${ROOT_URL}/api/payment/create_order`, {
         amount: pageInfo.total * 100, // Razorpay amount is in paise (1 INR = 100 paise)
         currency: 'INR',
         receipt: 'receipt#1'
@@ -44,16 +46,19 @@ const RazorpayCheckout = ({ pageInfo, formData, isFormValid }) => {
         description: 'Test Transaction',
         order_id: orderData.id, // This is the order ID returned from the backend
         handler: async function (response) {
-
           console.log(response);
           try {
- const callbackResponse = await axios.post('http://<ngrok-subdomain>.ngrok-free.app/api/payment/callback', {
+            const callbackResponse = await axios.post(`${ROOT_URL}/api/payment/callback`, {
               order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
+            }, {
+              headers: {
+                'X-Razorpay-Signature': response.razorpay_signature
+              }
             });
-
+            console.log(callbackResponse.data);
             if (callbackResponse.data === "Payment successful") {
+              
               toast.success('Payment successful!');
               navigate('/booking-confirmation', {
                 state: { confirmationData: { bookingDetails: { paymentId: response.razorpay_payment_id, orderId: response.razorpay_order_id, signature: response.razorpay_signature, formData, pageInfo } } },

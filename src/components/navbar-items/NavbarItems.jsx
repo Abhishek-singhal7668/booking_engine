@@ -65,23 +65,7 @@ const NavbarItems = ({ isAuthenticated, onHamburgerMenuToggle }) => {
           About us
         </Link>
       </li>
-      <li
-        className={`${!isAuthenticated && 'p-4 hover:bg-blue-900 md:hover:bg-brand'}`}
-      >
-        {isAuthenticated ? (
-          <DropdownButton triggerType="click" options={dropdownOptions} />
-        ) : (
-          <Link
-            to="/login"
-            className={`uppercase font-medium text-slate-100 hover-underline-animation ${
-              isActive('/login') && 'active-link'
-            }`}
-            onClick={onHamburgerMenuToggle}
-          >
-            Login/Register
-          </Link>
-        )}
-      </li>
+      
     </>
   );
 };

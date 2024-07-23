@@ -10,6 +10,8 @@ import tw from 'tailwind-styled-components';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import calculateRoomPriceWithMealPlans from 'utils/calculateRoomPriceWithMealPlans';
+import { formatCurrency } from 'utils/formatCurrency';
+import ZeroView from './zeroView';
 
 const safeJsonParse = (value, defaultValue) => {
   try {
@@ -399,38 +401,31 @@ const HotelsSearch = () => {
       <div className="my-4"></div>
       <div className="w-[180px]"></div>
       {!hasSearched ? (
-  <div className="flex justify-center items-center my-10">
-    <h2 className="text-gray-700 text-lg">Please enter your search criteria to see available rooms.</h2>
-  </div>
-) : (
-  <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} numGuestsInputValue={numGuestsInputValue} selectedRooms={selectedRooms}
-  setSelectedRooms={setSelectedRooms} selectedPlansState={selectedPlansState} 
-    setSelectedPlansState={setSelectedPlansState} /> 
-)}
+        <ZeroView /> // Use the ZeroView component here
+      ) : (
+        <BookingTable roomData={searchResult} onSelectAmountChange={onSelectAmountChange} total={total} taxes={taxes} numGuestsInputValue={numGuestsInputValue} selectedRooms={selectedRooms} setSelectedRooms={setSelectedRooms} selectedPlansState={selectedPlansState} setSelectedPlansState={setSelectedPlansState} /> 
+      )}
 
       {hasSearched && (
-  <div className="flex justify-end items-center mt-4 px-5 ">
-    <div className="w-full max-w-sm p-4 bg-white shadow-md rounded-lg text-right">
-      <h4>Total Room/Unit tariff (Ex Gst/Tax): ₹{total ? (total - taxes).toFixed(2) : 0}</h4>
-      <h4>Tax: ₹{taxes ? taxes.toFixed(2) : 0}</h4>
-      <h4>Gross Total: ₹{total ? total.toFixed(2) : 0}</h4>
-      <Buton
-        onClick={handleSubmit}
-        disabled={total <= 0} 
-        className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded mt-4"
-      >
-        Book Now
-      </Buton>
-    </div>
-    {/* Add this div for additional space */}
-    <div className="mt-20"></div>
-  </div>
-)}
-
-
-
+        <div className="flex justify-end items-center mt-4 px-5 ">
+          <div className="w-full max-w-sm p-4 bg-white shadow-md rounded-lg text-right">
+            <h4>Total Room/Unit tariff (Ex Gst/Tax): {formatCurrency(total ? (total - taxes) : 0)}</h4>
+            <h4>Tax: {formatCurrency(taxes ? taxes : 0)}</h4>
+            <h4>Gross Total: {formatCurrency(total ? total : 0)}</h4>
+            <Buton
+              onClick={handleSubmit}
+              disabled={total <= 0} 
+              className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded mt-4"
+            >
+              Book Now
+            </Buton>
+          </div>
+          <div className="mt-20"></div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 export default HotelsSearch;

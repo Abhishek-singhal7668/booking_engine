@@ -34,8 +34,8 @@ const PrivacyPolicyModal = ({ isOpen, onRequestClose }) => {
       }
     }}
   >
-    <h2 className="font-bold text-xl mb-4">Privacy Policy</h2>
-    <p>This privacy policy sets out how we use and protects any information that you give us when you use this website.</p>
+   <h2 className="font-bold mb-4" style={{ color: '#000', textAlign: 'center', fontSize: '2rem' }}>Privacy Policy</h2>
+   <p>This privacy policy sets out how we use and protects any information that you give us when you use this website.</p>
     <p>We are committed to ensuring that your privacy is protected. Should we ask you to provide certain information by which you can be identified when using this website, then you can be assured that it will only be used in accordance with this privacy statement.</p>
     <p>We may change this policy from time to time by updating this page. You should check this page from time to time to ensure that you are happy with any changes.</p>
     <h3 className="font-bold text-lg mt-4">What we collect</h3>

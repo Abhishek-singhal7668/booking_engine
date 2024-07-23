@@ -41,16 +41,7 @@ const GlobalFooter = () => {
           <div className="w-full md:w-1/3 mb-6 md:mb-0">
             <h4 className="font-bold text-lg mb-2">Newsletter</h4>
             <p>Stay updated with our latest trends</p>
-            <form>
-              <input
-                type="email"
-                placeholder="Enter email"
-                className="p-2 rounded"
-              />
-              <button className="ml-2 p-2 bg-brand text-white rounded">
-                Subscribe
-              </button>
-            </form>
+           
           </div>
         </div>
       </div>

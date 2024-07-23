@@ -10,6 +10,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import RoomSelectionModal from './RoomSelectionModal';
 import { Typography, Divider } from 'antd';
 import calculateRoomPriceWithMealPlans from 'utils/calculateRoomPriceWithMealPlans';
+import { formatCurrency } from 'utils/formatCurrency';
 const { Text } = Typography;
 
 const Table = tw.table`
@@ -248,8 +249,9 @@ const RoomInfoRow = ({
       </Td>
       <Td>
         <div className="flex flex-col items-start">
-          <span className="font-bold">₹{calculatedPrice.total.toFixed(2)}</span>
-          <span className="text-xs text-gray-500">Incl. taxes ₹{calculatedPrice.taxes.toFixed(2)}</span>
+        <span className="font-bold">{formatCurrency(calculatedPrice.total)}</span>
+<span className="text-xs text-gray-500">Incl. taxes {formatCurrency(calculatedPrice.taxes)}</span>
+
         </div>
       </Td>
       <Td>{renderSelectedPlansSummary()}</Td>

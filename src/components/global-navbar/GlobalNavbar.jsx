@@ -20,7 +20,7 @@ const GlobalNavbar = () => {
         <Link to="/">
           <img src={""} alt="" className="" />
         </Link>
-        <span className="ml-4 text-white text-2xl font-bold tracking-wide">House of Kapaali</span>
+        <span className="ml-4 text-white text-2xl font-bold tracking-wide">ABC PROP</span>
       </div>
       <ul className="list-none hidden md:flex">
         <NavbarItems isAuthenticated={isAuthenticated} />
