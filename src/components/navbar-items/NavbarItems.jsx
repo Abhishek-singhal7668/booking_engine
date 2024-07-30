@@ -1,8 +1,9 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation,useParams } from 'react-router-dom';
 import DropdownButton from 'components/ux/dropdown-button/DropdownButton';
 import { networkAdapter } from 'services/NetworkAdapter';
 import { useContext } from 'react';
 import { AuthContext } from 'contexts/AuthContext';
+import { property } from 'lodash';
 
 /**
  * A component that renders the navigation items for the navbar for both mobile/desktop view.
@@ -15,10 +16,11 @@ const NavbarItems = ({ isAuthenticated, onHamburgerMenuToggle }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const context = useContext(AuthContext);
-
+  const { propertyId } = useParams();
   /**
    * Handles the logout action by calling the logout API and updating the authentication state.
    */
+  console.log("navabar",propertyId);
   const handleLogout = async () => {
     await networkAdapter.post('api/users/logout');
     context.triggerAuthCheck();
@@ -45,7 +47,7 @@ const NavbarItems = ({ isAuthenticated, onHamburgerMenuToggle }) => {
       
       <li className="p-4 hover:bg-blue-900 md:hover:bg-brand">
         <Link
-          to="/hotels"
+          to={`/hotels/${propertyId}`} 
           className={`uppercase font-medium text-slate-100 hover-underline-animation ${
             isActive('/hotels') && 'active-link'
           }`}

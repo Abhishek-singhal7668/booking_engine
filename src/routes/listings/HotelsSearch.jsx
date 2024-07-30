@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useContext } from 'react';
 import GlobalSearchBox from 'components/global-search-box/GlobalSearchbox';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate,useParams } from 'react-router-dom';
 import { parse, format } from 'date-fns';
 import axios from 'axios';
 import BookingTable from './BookingTable';
@@ -12,6 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import calculateRoomPriceWithMealPlans from 'utils/calculateRoomPriceWithMealPlans';
 import { formatCurrency } from 'utils/formatCurrency';
 import ZeroView from './zeroView';
+import {getIcon} from './iconMap';
 
 const safeJsonParse = (value, defaultValue) => {
   try {
@@ -53,6 +54,7 @@ const Buton = tw.button`
 
 const HotelsSearch = () => {
   const navigate = useNavigate();
+  const { propertyId } = useParams();
   const [isDatePickerVisible, setisDatePickerVisible] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const instance = axios.create({
@@ -67,7 +69,7 @@ const HotelsSearch = () => {
   const [locationInputValue, setLocationInputValue] = useState('');
   const [pageInfo, setPageInfo] = useState({});
   const [propertyName, setpropertyName] = useState('');
-  const [propertyId, setPropertyId] = useState('');
+  //const [propertyId, setPropertyId] = useState('');
   const [numGuestsInputValue, setNumGuestsInputValue] = useState(0);
   const [availableCities, setAvailableCities] = useState([]);
   const [currentResultsPage, setCurrentResultsPage] = useState(1);
@@ -124,29 +126,33 @@ const HotelsSearch = () => {
     setSelectedRoomsState({});
     setSelectedRooms({});
     setSelectedPlansState({});
-  localStorage.clear();
+    localStorage.clear();
     const checkInDate = format(dateRange[0].startDate, "yyyy-MM-dd");
     const checkOutDate = format(dateRange[0].endDate, "yyyy-MM-dd");
     setHasSearched(true); // Update the search status
     //setIsInitialLoad(false);
-    navigate('/hotels', {
-      state: {
-        numGuestsInputValue,
-        checkInDate,
-        checkOutDate,
-        propertyName,
-        propertyId
-      },
+    const updatedPageInfo = {
+      numGuestsInputValue,
+      checkInDate,
+      checkOutDate,
+      propertyName,
+      propertyId
+    };
+
+    // Update pageInfo state
+    navigate(`/hotels/${propertyId}`, {
+      state: updatedPageInfo,
     });
   };
-
+  console.log("guestn",numGuestsInputValue);
   const onDatePickerIconClick = () => {
     setisDatePickerVisible(!isDatePickerVisible);
   };
 
   const onNumGuestsInputChange = (numGuests) => {
+    
     if (numGuests < 500 && numGuests > 0) {
-      setNumGuestsInputValue(numGuests);
+      setNumGuestsInputValue(numGuests);console.log("ok");
     }
   };
 
@@ -157,8 +163,35 @@ const HotelsSearch = () => {
       const res = await instance.get('/booking_engine_API', { params });
       if (res.data.status === 'success') {
         const roomsData = await processResult(res.data.response.room, totalDays);
-        setSearchResult(roomsData);
         
+        const updatedRoomsData = await Promise.all(
+          roomsData.map(async (room) => {
+            const roomDetailsRes = await instance.get(`/get_room_rate`, {
+              params: {
+                room_category: room.room_type,
+                from_date: params.checkin,
+                to_date: params.checkout,
+                property: params.property,
+              }
+            });
+           // console.log(room.room_category);
+            console.log(roomDetailsRes.data);
+            console.log(params);
+            const roomDetails = roomDetailsRes.data.response;
+            const processedAmenities = roomDetails.amenities_class.map(amenity => ({
+              name: amenity.amenity_name,
+              icon: getIcon(amenity.amenities_icon_text)// Default icon if not found
+            }));
+            console.log("ab",processedAmenities);
+            return {
+              ...room,
+              description: roomDetails.room_description,
+              amenities: processedAmenities,
+            };
+          })
+        );
+        setSearchResult(updatedRoomsData);
+        console.log("hn bhai",updatedRoomsData);
         // Fetch meal plans for each room category, passing params
         await fetchMealPlansForRooms(roomsData, params);
 
@@ -213,30 +246,30 @@ const HotelsSearch = () => {
   
 
   const processResult = async (data, totalDays) => {
-    const groupedRooms = data.filter(room => room.cleaning_status !== 'Dirty')
-      .reduce((acc, room) => {
-        const roomKey = room.Room_category_new_deprecate;
-        if (!acc[roomKey]) {
-          acc[roomKey] = {
-            room_type: roomKey,
-            number_of_avaiable_rooms: 1,
-            rate: room.rack_rate,
-            standard_occupancy: room.standard_occupancy,
-            max_occupancy: room.max_occupancy,
-            totaldays: totalDays,
-            room_category: room.category_room_future,
-            room_image: room.room_image,
-            id: room.parent_property,
-            mealPlans: []  // Placeholder for meal plans
-          };
-        } else {
-          acc[roomKey].number_of_avaiable_rooms++;
-        }
-        return acc;
-      }, {});
-
+    const groupedRooms = data.reduce((acc, room) => {
+      const roomKey = room.Room_category_new_deprecate;
+      if (!acc[roomKey]) {
+        acc[roomKey] = {
+          room_type: roomKey,
+          number_of_avaiable_rooms: 1,
+          rate: room.rack_rate,
+          standard_occupancy: room.standard_occupancy,
+          max_occupancy: room.max_occupancy,
+          totaldays: totalDays,
+          room_category: room.category_room_future,
+          room_image: room.room_image,
+          id: room.parent_property,
+          mealPlans: []  // Placeholder for meal plans
+        };
+      } else {
+        acc[roomKey].number_of_avaiable_rooms++;
+      }
+      return acc;
+    }, {});
+  
     return Object.values(groupedRooms);
   };
+  
 
   const [total, setTotal] = useState(() => {
     const savedTotal = safeJsonParse(localStorage.getItem('total'), 0);
@@ -249,26 +282,11 @@ const HotelsSearch = () => {
   });
 
   useEffect(() => {
-    if (!location.state) {
-      localStorage.clear();
-     
-    setHasSearched(false);
-    setTotal(0);
-  setTaxes(0);
-  setSearchResult([]);
-  setSelectedRoomsState({});
-  setSelectedRooms({});
-  setSelectedPlansState({});
-  localStorage.clear(); 
-      setIsInitialLoad(true);
-    } else {
-      const { propertyId, numGuest, checkInDate, checkOutDate, propertyName } = location.state;
-      if (numGuest) {
-        setNumGuestsInputValue(numGuest.toString());
-      }
-      setPropertyId(propertyId);
+    if (location.state) {
+      const { propertyId, numGuestsInputValue, checkInDate, checkOutDate, propertyName } = location.state;
+      setNumGuestsInputValue(numGuestsInputValue);
       setpropertyName(propertyName);
-      setLocationInputValue("city");
+      console.log("HotelsSearch - useEffect - numGuestsInputValue:", numGuestsInputValue);
       if (checkInDate && checkOutDate) {
         setDateRange([
           {
@@ -288,45 +306,70 @@ const HotelsSearch = () => {
       setPageInfo(pageInfo);
       fetchData(params, totalDays);
       setIsInitialLoad(false);
+      console.log("HotelsSearch - Initial Load Page Info:", pageInfo);
+    } else {
+      localStorage.clear();
+      setTotal(0);
+      setTaxes(0);
+      setSearchResult([]);
+      setSelectedRoomsState({});
+      setSelectedRooms({});
+      setSelectedPlansState({});
+      localStorage.clear();
+      setIsInitialLoad(true);
     }
   }, [location]);
+
   
 
   const handlePropertyNameChange = (propertyName) => {
     const selectedProperty = properties.find(property => property.title === propertyName);
     if (selectedProperty) {
-      setPropertyId(selectedProperty.propertyId);
+      
       setpropertyName(propertyName);
     }
   };
-
+  
   const [propertyListInput, setPropertyListInput] = useState(properties);
   const [selectedRooms, setSelectedRooms] = useState({});
+  
   const handleSubmit = () => {
+    console.log("hotelsearch guest",numGuestsInputValue);
+    const newPageInfo={
+      ...pageInfo,
+      numGuestsInputValue:numGuestsInputValue
+
+    }
+    const totalRooms = Object.values(selectedRooms)
+    .flatMap(roomCategory => Object.values(roomCategory)) // Flatten the nested object values
+    .map(Number) // Ensure each value is a number
+    .reduce((sum, num) => sum + num, 0);
+    
     navigate('/checkout', {
       state: {
-        ...pageInfo,
-        numGuestsInputValue,
+        ...newPageInfo,
         roomCategories: searchResult.filter(room => room.number_of_rooms > 0),
-        selectedRooms
+        selectedRooms,
+        totalRooms,
+        propertyId,
       }
     });
   };
 
   const onSelectAmountChange = (cnt, rate, roomType, selectedPlans) => {
     const room = searchResult.find(e => e.room_type === roomType);
-    console.log("Room found:", room);
+    //console.log("Room found:", room);
   
     const { total, taxes } = calculateRoomPriceWithMealPlans(room, selectedPlans);
-    console.log("Calculated Total:", total);
-    console.log("Calculated Taxes:", taxes);
+    // console.log("Calculated Total:", total);
+    // console.log("Calculated Taxes:", taxes);
   
     setSelectedRooms(prevState => {
       const newState = {
         ...prevState,
         [roomType]: selectedPlans
       };
-      console.log("Updated Selected Rooms State:", newState);
+     // console.log("Updated Selected Rooms State:", newState);
       return newState;
     });
   
@@ -336,13 +379,13 @@ const HotelsSearch = () => {
     tempRes[index].total = total;
     tempRes[index].taxes = taxes;
     tempRes[index].number_of_rooms = cnt;
-    console.log("Updated Room:", tempRes[index]);
+    //console.log("Updated Room:", tempRes[index]);
     setSearchResult(tempRes);
-    console.log("Updated Search Result:", tempRes);
+  //  console.log("Updated Search Result:", tempRes);
   
     const { totalAllRooms, taxAllRooms } = calculateAllRooms(tempRes);
-    console.log("Total All Rooms:", totalAllRooms);
-    console.log("Tax All Rooms:", taxAllRooms);
+    //console.log("Total All Rooms:", totalAllRooms);
+   // console.log("Tax All Rooms:", taxAllRooms);
     setTotal(totalAllRooms);
     setTaxes(taxAllRooms);
   
@@ -354,7 +397,7 @@ const HotelsSearch = () => {
         room_category: tempRes,
         number_of_rooms: cnt
       };
-      console.log("Updated Page Info:", newPageInfo);
+      //console.log("Updated Page Info:", newPageInfo);
       return newPageInfo;
     });
   

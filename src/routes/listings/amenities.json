@@ -1,6 +1,6 @@
 [
     {
-      "room_type": "House",
+      "room_type": "A-Frame Cabi",
       "description": "Spacious and comfortable, ideal for families or groups.",
       "amenities": [
         "Free Wi-Fi",
@@ -38,6 +38,26 @@
         "Private Bathroom",
         "Work Desk"
       ]
-    }
+    }, {
+      "room_type": "A-Frame Cabin",
+      "description": "Enjoy a cozy retreat in our A-Frame Cottage, offering stunning views and a serene atmosphere. This eco-friendly accommodation includes modern amenities, 24/7 hot water, and internet access.",
+      "amenities": [
+          "Beds",
+          "Wifi",
+          "Breakfast",
+          "Parking",
+          "Bath"
+      ]
+  },
+  {
+      "room_type": "Box Cabin",
+      "description": "Experience comfort and modern charm in our Box Cabin Room. Featuring eco-friendly design and breathtaking views, this room provides 24/7 hot water and internet access.",
+      "amenities": [
+          "Wifi",
+          "Breakfast",
+          "Parking",
+          "Bath"
+      ]
+  }
   ]
   

@@ -1,23 +1,16 @@
 [
   
   {
-    "hotelCode": 71230,
+    
     "property_id": "1632210485323x815939605017133000",
-    "images": [
-      {
-        "imageUrl": "/images/hotels/465660377/465660377.jpg",
-        "accessibleText": "Courtyard by Marriott Pune"
-      }
-    ],
-    "title": "ABC PROP",
-    "subtitle": "C 988, Block C Dr, Block C, Sushant Lok Phase I, Sector 43, Gurugram, Haryana 122009",
-    "benefits": [
-      "Free cancellation",
-      "No prepayment needed – pay at the property",
-      "Free wifi"
-    ],
-    "price": "25300",
-    "ratings": "4",
-    "city": "pune"
+    "title": "ABC PROP"
+    
+  },
+  {
+    
+    "property_id": "1721802950704x534375175957250050",
+    "title": "Starry Nights Glamps"
+    
   }
+  
 ]

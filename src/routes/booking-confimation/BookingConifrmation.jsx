@@ -18,9 +18,7 @@ const BookingConfirmation = () => {
           <h1 className="text-2xl font-bold text-gray-800 mb-2">Booking Confirmed!</h1>
           <p className="text-gray-600">Thank you for your booking. Your reservation has been confirmed. Please check your email for the booking details and instructions for your stay.</p>
         </div>
-        <div className="mt-6 flex justify-center">
-          <a href="/hotels" className="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 transition duration-300">Back to Home</a>
-        </div>
+        
       </div>
     </div>
   );

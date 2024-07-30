@@ -39,12 +39,12 @@ const GuestSelector = ({ onClose, initialAdults, initialChildren, showModal, set
     <div className="p-4">
       <div className="flex items-center mb-4">
         <FontAwesomeIcon icon={faUser} className="text-blue-500 mr-2" />
-        <span className="text-gray-600 font-semibold">Adults (12 years or above)</span>
+        <span className="text-gray-600 font-semibold">Adults (6 years or above)</span>
         <div className="flex items-center ml-4">
           <button
             className="bg-gray-100 text-gray-700 font-semibold py-1 px-2 rounded-l-md"
             onClick={handleRemoveAdult}
-            disabled={adults === 1}
+            disabled={adults === 2}
           >
             -
           </button>

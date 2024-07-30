@@ -10,11 +10,7 @@ const ZeroView = () => {
       <p className="text-gray-700 mb-6 text-center">
         Please enter your search criteria to see available rooms. Select a property, number of guests, and date range.
       </p>
-      <button 
-        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full focus:outline-none focus:shadow-outline transition-all duration-300 ease-in-out transform hover:scale-110 shadow-lg"
-      >
-        Enter Search Criteria
-      </button>
+      
     </div>
   );
 };

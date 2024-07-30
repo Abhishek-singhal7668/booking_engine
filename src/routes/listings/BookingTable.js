@@ -94,6 +94,7 @@ const BookingTable = ({ roomData, onSelectAmountChange, total, taxes, numGuestsI
   setSelectedPlansState  }) => {
     console.log("BookingTable - Total:", total);
     console.log("BookingTable - Taxes:", taxes);
+    console.log("BookingTable - :Guests", numGuestsInputValue);
   const savedSelectedRooms = JSON.parse(localStorage.getItem('selectedRooms')) || {};
 
   const [selectedRoomsState, setSelectedRoomsState] = useState(savedSelectedRooms);

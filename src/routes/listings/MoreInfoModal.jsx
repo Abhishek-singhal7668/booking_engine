@@ -6,6 +6,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 const amenityIcons = {
+  "Beds": faBed,
+  "Wifi": faWifi,
+  "Breakfast": faCoffee, // assuming breakfast icon
+  "Parking": faLock, // assuming parking icon
+  "Bath": faBath,
   "Free Wi-Fi": faWifi,
   "Air Conditioning": faSnowflake,
   "Flat-screen TV": faTv,

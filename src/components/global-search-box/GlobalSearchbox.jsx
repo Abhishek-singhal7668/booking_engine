@@ -5,7 +5,7 @@ import { Select } from 'antd';
 import { useState, useRef } from 'react';
 import GuestSelector from './GuestSelector';
 import useOutsideClickHandler from 'hooks/useOutsideClickHandler';
-
+import { useParams } from 'react-router-dom';
 const inputSyleMap = {
   SECONDARY: 'Finner__input--secondary',
   DARK: 'Finner__input--dark',
@@ -26,18 +26,25 @@ const GlobalSearchBox = (props) => {
   } = props;
 
   const [guestSelectorOpen, setGuestSelectorOpen] = useState(false);
-  const [adults, setAdults] = useState(1);
+  const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const guestSelectorRef = useRef();
-
+  const { propertyId } = useParams();
   useOutsideClickHandler(guestSelectorRef, () => setGuestSelectorOpen(false));
-
-  const handleGuestInputChange = (adults, children) => {
-    setAdults(adults);
-    setChildren(children);
-    onNumGuestsInputChange(adults + children);
+  console.log("global box is called");
+  const handleGuestInputChange = (newAdults, newChildren) => {
+    setAdults(newAdults);
+    setChildren(newChildren);
+    const totalGuests = newAdults + newChildren;
+    console.log("GlobalSearchBox - Total Guests:", totalGuests);
+    onNumGuestsInputChange(totalGuests);  
   };
-
+  const handleSearchButtonClick = () => {
+    // Call handleGuestInputChange with current adults and children values if not already confirmed
+    handleGuestInputChange(adults, children);
+    console.log("GlobalSearchBox - Search Button Clicked");
+    onSearchButtonAction();
+  };
   return (
     <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box relative p-2 sm:p-4">
       <Select
@@ -98,7 +105,7 @@ const GlobalSearchBox = (props) => {
       </div>
       <button
         className="w-full md:w-auto sb__button--secondary bg-brand-secondary hover:bg-yellow-600 px-4 py-2 text-white"
-        onClick={onSearchButtonAction}
+        onClick={handleSearchButtonClick}
       >
         SEARCH
       </button>
