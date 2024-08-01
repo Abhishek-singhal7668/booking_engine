@@ -22,29 +22,32 @@ const GlobalSearchBox = (props) => {
     onDateChangeHandler,
     setisDatePickerVisible,
     dateRange,
-    defaultPropertyValue
+    defaultPropertyValue,
+    numRoomsInputValue,
+    numGuestsInputValue
   } = props;
 
   const [guestSelectorOpen, setGuestSelectorOpen] = useState(false);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
+  const [rooms, setRooms] = useState(1);
   const guestSelectorRef = useRef();
   const { propertyId } = useParams();
   useOutsideClickHandler(guestSelectorRef, () => setGuestSelectorOpen(false));
-  console.log("global box is called");
-  const handleGuestInputChange = (newAdults, newChildren) => {
+
+  const handleGuestInputChange = (newAdults, newChildren, newRooms) => {
     setAdults(newAdults);
     setChildren(newChildren);
+    setRooms(newRooms);
     const totalGuests = newAdults + newChildren;
-    console.log("GlobalSearchBox - Total Guests:", totalGuests);
-    onNumGuestsInputChange(totalGuests);  
+    onNumGuestsInputChange(totalGuests, newRooms);
   };
+
   const handleSearchButtonClick = () => {
-    // Call handleGuestInputChange with current adults and children values if not already confirmed
-    handleGuestInputChange(adults, children);
-    console.log("GlobalSearchBox - Search Button Clicked");
+    handleGuestInputChange(adults, children, rooms);
     onSearchButtonAction();
   };
+
   return (
     <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box relative p-2 sm:p-4">
       <Select
@@ -65,7 +68,7 @@ const GlobalSearchBox = (props) => {
         }} // Add custom styles for the square box
       >
         {propertyListInput.map((property, index) => (
-          <Select.Option defaultPropertyValue={defaultPropertyValue} key={`property-${index}`} value={property.title}>
+          <Select.Option key={`property-${index}`} value={property.title}>
             {property.title}
           </Select.Option>
         ))}
@@ -82,7 +85,7 @@ const GlobalSearchBox = (props) => {
         <Input
           className="w-full"
           size="sm"
-          value={`${adults} adults, ${children} children`}
+          value={`${adults} adults, ${children} children, ${rooms} rooms`}
           onClick={() => setGuestSelectorOpen(!guestSelectorOpen)}
           placeholder="No. of guests"
           icon={faPerson}
@@ -91,12 +94,13 @@ const GlobalSearchBox = (props) => {
         {guestSelectorOpen && (
           <div ref={guestSelectorRef} className="absolute top-12 left-0 w-full bg-white border border-gray-200 shadow-lg z-10">
             <GuestSelector
-              onClose={(adults, children) => {
-                handleGuestInputChange(adults, children);
+              onClose={(adults, children, rooms) => {
+                handleGuestInputChange(adults, children, rooms);
                 setGuestSelectorOpen(false);
               }}
               initialAdults={adults}
               initialChildren={children}
+              initialRooms={rooms}
               showModal={guestSelectorOpen} // Pass showModal state
               setShowModal={setGuestSelectorOpen} // Pass setter for showModal state
             />

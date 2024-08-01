@@ -13,6 +13,7 @@ import calculateRoomPriceWithMealPlans from 'utils/calculateRoomPriceWithMealPla
 import { formatCurrency } from 'utils/formatCurrency';
 import ZeroView from './zeroView';
 import {getIcon} from './iconMap';
+import { generateRoomCombinationsDFS } from 'utils/roomCombination';
 
 const safeJsonParse = (value, defaultValue) => {
   try {
@@ -110,7 +111,7 @@ const HotelsSearch = () => {
   };
   const [selectedRoomsState, setSelectedRoomsState] = useState({});
   const [selectedPlansState, setSelectedPlansState] = useState({});
-
+  const [numRoomsInputValue, setNumRoomsInputValue] = useState(1);
   const onSearchButtonAction = () => {
     if (!propertyName) {
       toast.error('Property field cannot be empty');
@@ -149,10 +150,11 @@ const HotelsSearch = () => {
     setisDatePickerVisible(!isDatePickerVisible);
   };
 
-  const onNumGuestsInputChange = (numGuests) => {
+  const onNumGuestsInputChange = (numGuests,numRooms) => {
     
     if (numGuests < 500 && numGuests > 0) {
-      setNumGuestsInputValue(numGuests);console.log("ok");
+      setNumGuestsInputValue(numGuests);console.log("ok",numGuests);
+      setNumRoomsInputValue(numRooms);
     }
   };
 
@@ -187,13 +189,18 @@ const HotelsSearch = () => {
               ...room,
               description: roomDetails.room_description,
               amenities: processedAmenities,
+              
             };
           })
         );
-        setSearchResult(updatedRoomsData);
+        //setSearchResult(updatedRoomsData);
+        
+        const roomCombinations = generateRoomCombinationsDFS(updatedRoomsData, numGuestsInputValue, numRoomsInputValue);
+      setSearchResult(roomsData);
+      console.log("hn bhai rc",roomCombinations);
         console.log("hn bhai",updatedRoomsData);
         // Fetch meal plans for each room category, passing params
-        await fetchMealPlansForRooms(roomsData, params);
+        await fetchMealPlansForRooms(updatedRoomsData, params);
 
       } else {
         console.error('Failed to fetch room data:', res.data);
@@ -431,6 +438,7 @@ const HotelsSearch = () => {
           propertyListInput={propertyListInput}
           numGuestsInputValue={numGuestsInputValue}
           isDatePickerVisible={isDatePickerVisible}
+          numRoomsInputValue={numRoomsInputValue} 
           setisDatePickerVisible={setisDatePickerVisible}
           handlePropertyNameChange={handlePropertyNameChange}
           onNumGuestsInputChange={onNumGuestsInputChange}
@@ -450,21 +458,23 @@ const HotelsSearch = () => {
       )}
 
       {hasSearched && (
-        <div className="flex justify-end items-center mt-4 px-5 ">
-          <div className="w-full max-w-sm p-4 bg-white shadow-md rounded-lg text-right">
-            <h4>Total Room/Unit tariff (Ex Gst/Tax): {formatCurrency(total ? (total - taxes) : 0)}</h4>
-            <h4>Tax: {formatCurrency(taxes ? taxes : 0)}</h4>
-            <h4>Gross Total: {formatCurrency(total ? total : 0)}</h4>
-            <Buton
-              onClick={handleSubmit}
-              disabled={total <= 0} 
-              className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded mt-4"
-            >
-              Book Now
-            </Buton>
-          </div>
-          <div className="mt-20"></div>
-        </div>
+       <div className="flex justify-end items-center mt-4 px-5 sm:justify-end">
+       <div className="w-full max-w-sm p-4 bg-white shadow-md rounded-lg text-right sm:mt-4">
+         <h4>Total Room/Unit tariff (Ex Gst/Tax): {formatCurrency(total ? (total - taxes) : 0)}</h4>
+         <h4>Tax: {formatCurrency(taxes ? taxes : 0)}</h4>
+         <h4>Gross Total: {formatCurrency(total ? total : 0)}</h4>
+         <button
+           onClick={handleSubmit}
+           disabled={total <= 0}
+           className="bg-[#006ce4] hover:bg-blue-700 text-white font-bold h-[44px] w-[120px] rounded mt-4"
+         >
+           Book Now
+         </button>
+       </div>
+       <div className="mt-20"></div>
+     </div>
+     
+      
       )}
     </div>
   );

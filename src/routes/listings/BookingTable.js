@@ -1,16 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import tw from 'tailwind-styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faPlusSquare, faCaretRight } from '@fortawesome/free-solid-svg-icons';
-import calculateRoomPrice from 'utils/calculateRoomPrice';
+import { faUser, faPlusSquare } from '@fortawesome/free-solid-svg-icons';
 import MoreInfoModal from './MoreInfoModal';
 import amenities from './amenities.json';
-import { toast, ToastContainer } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import RoomSelectionModal from './RoomSelectionModal';
-import { Typography, Divider } from 'antd';
+import { Typography, Divider, Button } from 'antd';
 import calculateRoomPriceWithMealPlans from 'utils/calculateRoomPriceWithMealPlans';
 import { formatCurrency } from 'utils/formatCurrency';
+
 const { Text } = Typography;
 
 const Table = tw.table`
@@ -90,36 +90,36 @@ const CellContent = tw.div`
   space-x-2
 `;
 
-const BookingTable = ({ roomData, onSelectAmountChange, total, taxes, numGuestsInputValue,selectedRooms, setSelectedRooms,selectedPlansState, 
-  setSelectedPlansState  }) => {
-    console.log("BookingTable - Total:", total);
-    console.log("BookingTable - Taxes:", taxes);
-    console.log("BookingTable - :Guests", numGuestsInputValue);
+const BookingTable = ({ roomData, onSelectAmountChange, total, taxes, numGuestsInputValue, selectedRooms, setSelectedRooms, selectedPlansState, setSelectedPlansState }) => {
   const savedSelectedRooms = JSON.parse(localStorage.getItem('selectedRooms')) || {};
 
   const [selectedRoomsState, setSelectedRoomsState] = useState(savedSelectedRooms);
-  
+  const [selectedRoomsData, setSelectedRoomsData] = useState({}); 
+
   useEffect(() => {
     localStorage.setItem('selectedRooms', JSON.stringify(selectedRoomsState));
   }, [selectedRoomsState]);
+  
   useEffect(() => {
     setSelectedRoomsState(selectedRooms);  // Update the selected rooms state
   }, [selectedRooms]);
 
-
-  const handleSelectChange = (roomType, value, perNightPrice, selectedPlans) => {
-    const updatedSelectedRooms = { ...selectedRoomsState, [roomType]: Number(value) };
-    setSelectedRoomsState(updatedSelectedRooms);
-    setSelectedRooms(updatedSelectedRooms); 
-    onSelectAmountChange(value, perNightPrice, roomType, selectedPlans);
+  const handleSelectChange = (roomType, occupancy, value, perNightPrice, totalRate) => {
+    setSelectedRoomsData(prevState => {
+      const newState = { ...prevState };
+      if (!newState[roomType]) {
+        newState[roomType] = {};
+      }
+      newState[roomType][occupancy] = { rooms: value, perNightPrice, totalRate };
+      return newState;
+    });
   };
-  
+
   const handleModalConfirm = (selectedPlans, roomType) => {
     setSelectedPlansState(prevState => ({
       ...prevState,
       [roomType]: selectedPlans
     }));
-    
   };
 
   return (
@@ -128,34 +128,34 @@ const BookingTable = ({ roomData, onSelectAmountChange, total, taxes, numGuestsI
         <Thead>
           <Tr>
             <Th>Room Type</Th>
-            <Th>Maximum Occupancy</Th>
-            <Th>{roomData && roomData.length > 0 ? `Rate for ${roomData[0].totaldays} Nights` : 'Price for Nights'}</Th>
-            <Th></Th>
+            <Th>Number of Guests</Th>
+            <Th>Rate for {roomData && roomData.length > 0 ? roomData[0].totaldays : 1} Nights</Th>
+            <Th>Select Room</Th>
             <Th>Total Amount (Incl. Taxes)</Th>
-            <Th>Selected Meal Plans</Th>
+            <Th>Your Choices</Th>
           </Tr>
         </Thead>
         <TBody>
           {roomData && roomData.length > 0 && (
             roomData.map((e) => (
-              <RoomInfoRow 
-                key={e.room_type} 
-                totalPrice={e.rate * e.totaldays}
-                perNightPrice={e.rate}
-                availableRooms={e.number_of_avaiable_rooms}
-                roomType={e.room_type}
-                selectedRooms={selectedRoomsState[e.room_type] || 0}
-                onSelectChange={handleSelectChange}
-                total={total} 
-                taxes={taxes}
-                countOfGuests={e.standard_occupancy}
-                room_image={e.room_image}
-                roomData={roomData}
-                numGuestsInputValue={numGuestsInputValue}
-                mealPlans={e.mealPlans}
-                selectedPlansSummary={selectedPlansState[e.room_type] || {}}
-                onConfirm={handleModalConfirm}
-              />
+              <React.Fragment key={e.room_type}>
+                <RoomInfoRow 
+                  roomType={e.room_type}
+                  standardOccupancy={e.standard_occupancy}
+                  maxOccupancy={e.max_occupancy}
+                  room_image={e.room_image}
+                  roomData={roomData}
+                  numGuestsInputValue={numGuestsInputValue}
+                  mealPlans={e.mealPlans}
+                  selectedPlansSummary={selectedPlansState[e.room_type] || {}}
+                  onSelectChange={handleSelectChange}
+                  availableRooms={e.number_of_avaiable_rooms}
+                  total={total}
+                  taxes={taxes}
+                  selectedRooms={selectedRoomsState[e.room_type] || {}}
+                  onConfirm={handleModalConfirm}
+                />
+              </React.Fragment>
             ))
           )}
         </TBody>
@@ -166,15 +166,12 @@ const BookingTable = ({ roomData, onSelectAmountChange, total, taxes, numGuestsI
 };
 
 const RoomInfoRow = ({
-  roomType, totalPrice, perNightPrice, availableRooms, selectedRooms, onSelectChange,
-  total, taxes, countOfGuests, room_image, roomData, numGuestsInputValue, mealPlans, selectedPlansSummary, onConfirm
+  roomType, standardOccupancy, maxOccupancy, room_image, roomData, numGuestsInputValue, mealPlans, selectedPlansSummary, onSelectChange, availableRooms, total, taxes, selectedRooms, onConfirm
 }) => {
-  console.log("RoomInfoRow - Total:", total);
-  console.log("RoomInfoRow - Taxes:", taxes);
-  console.log("RoomInfoRow - TotalPrice:", totalPrice);
-
   const [showMoreInfoModal, setShowMoreInfoModal] = useState(false);
   const [showRoomSelectionModal, setShowRoomSelectionModal] = useState(false);
+  const [selectedOccupancy, setSelectedOccupancy] = useState(standardOccupancy); 
+  const [selectedRoomsData, setSelectedRoomsData] = useState({});
 
   const roomInfo = useMemo(() => {
     const room = amenities.find(item => item.room_type === roomType);
@@ -182,25 +179,16 @@ const RoomInfoRow = ({
   }, [roomType]);
 
   const handleModalConfirm = (selectedPlans) => {
-    const totalSelectedRooms = Object.values(selectedPlans).reduce((sum, num) => sum + num, 0);
-    const totalPriceForSelectedPlans = Object.keys(selectedPlans).reduce((sum, planId) => {
-      const plan = mealPlans.find(p => p.rate_plan_name === planId);
-      if (!plan) {
-        console.error(`Plan with id ${planId} not found`);
-        return sum;
-      }
-      return sum + (selectedPlans[planId] * plan.rate);
-    }, 0);
-    console.log("Selected Plans:", selectedPlans);
-    console.log("Total Price:", totalPriceForSelectedPlans);
-    onSelectChange(roomType, totalSelectedRooms, totalPriceForSelectedPlans / totalSelectedRooms, selectedPlans);
     onConfirm(selectedPlans, roomType);
     setShowRoomSelectionModal(false);
   };
+  const handleSelectChange = (plan, value, stdOccupancy, extraCharge) => {
+    const extraGuestCharge = Math.max(0, selectedOccupancy - stdOccupancy) * extraCharge;
+    const totalRate = plan.rate + extraGuestCharge;
 
-  const calculatedPrice = calculateRoomPriceWithMealPlans({ ...roomData[0], mealPlans }, selectedPlansSummary);
-
-  const renderSelectedPlansSummary = () => (
+    onSelectChange(roomType, selectedOccupancy, value, plan.rate, totalRate);
+  };
+  const renderMealPlanSummary = () => (
     <div className="p-4 bg-gray-50 rounded-md shadow-md border border-gray-200">
       <Text strong className="block mb-2 text-lg text-blue-600">Selected Meal Plans:</Text>
       {Object.entries(selectedPlansSummary).map(([plan, count]) => (
@@ -216,46 +204,65 @@ const RoomInfoRow = ({
     </div>
   );
 
-  return (
-    <Tr>
-      <Td>
-        <RoomTypeContainer>
-          {room_image ? (
-            <img src={room_image} alt={roomType} className="w-16 h-16 rounded-lg object-cover" />
-          ) : (
-            <div className="w-16 h-16 rounded-lg bg-gray-300"></div>
+  const renderOccupancyOptions = () => {
+    const options = [];
+    for (let occupancy = standardOccupancy; occupancy <= maxOccupancy; occupancy++) {
+      const calculatedPrice = calculateRoomPriceWithMealPlans({ ...roomData[0], mealPlans, occupancy }, selectedPlansSummary);
+      const selectedData = selectedRoomsData[roomType] && selectedRoomsData[roomType][occupancy];
+     
+      options.push(
+        <Tr key={occupancy}>
+          {occupancy === standardOccupancy && (
+            <Td rowSpan={maxOccupancy - standardOccupancy + 1}>
+              <RoomTypeContainer>
+                {room_image ? (
+                  <img src={room_image} alt={roomType} className="w-16 h-16 rounded-lg object-cover" />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-gray-300"></div>
+                )}
+                <RoomInfo>
+                  <RoomName>{roomType}</RoomName>
+                  <span className="text-sm text-gray-500 block">{roomInfo.description.split(' ').slice(0, 10).join(' ')}...</span>
+                  <MoreInfoButton onClick={() => setShowMoreInfoModal(true)}>
+                    <FontAwesomeIcon icon={faPlusSquare} className="mr-1" /> More Info
+                  </MoreInfoButton>
+                </RoomInfo>
+              </RoomTypeContainer>
+            </Td>
           )}
-          <RoomInfo>
-            <RoomName>{roomType}</RoomName>
-            <span className="text-sm text-gray-500 block">{roomInfo.description.split(' ').slice(0, 10).join(' ')}...</span>
-            <MoreInfoButton onClick={() => setShowMoreInfoModal(true)}>
-              <FontAwesomeIcon icon={faPlusSquare} className="mr-1" /> More Info
-            </MoreInfoButton>
-          </RoomInfo>
-        </RoomTypeContainer>
-      </Td>
-      <Td>
-        <CellContent>
-          <FontAwesomeIcon icon={faUser} className="text-lg" />
-          <span className='text-xl mx-1'>x</span>
-          <span className='text-lg'>{countOfGuests}</span>
-        </CellContent>
-      </Td>
-      <Td>₹{((calculatedPrice.total)-(calculatedPrice.taxes)).toFixed(2)}</Td>
-      <Td>
-        <button className="p-2 bg-blue-500 text-white rounded hover:bg-blue-700 transition duration-150"
-                onClick={() => setShowRoomSelectionModal(true)}>
-          <FontAwesomeIcon icon={faCaretRight} className="mr-2" />Select Rooms
-        </button>
-      </Td>
-      <Td>
-        <div className="flex flex-col items-start">
-        <span className="font-bold">{formatCurrency(calculatedPrice.total)}</span>
-<span className="text-xs text-gray-500">Incl. taxes {formatCurrency(calculatedPrice.taxes)}</span>
+          <Td>
+            <CellContent>
+              <FontAwesomeIcon icon={faUser} className="text-lg" />
+              <span className='text-xl mx-1'>x</span>
+              <span className='text-lg'>{occupancy}</span>
+            </CellContent>
+          </Td>
+          <Td>₹{((calculatedPrice.total)-(calculatedPrice.taxes)).toFixed(2)}</Td>
+          <Td>
+            <Button onClick={() => { setShowRoomSelectionModal(true); setSelectedOccupancy(occupancy); }}>
+              Select Room
+            </Button>
+          </Td>
+          <Td>
+            <div className="flex flex-col items-start">
+              <span className="font-bold">{selectedData ? formatCurrency(selectedData.totalRate) : formatCurrency(calculatedPrice.total)}</span>
+              <span className="text-xs text-gray-500">Incl. taxes {selectedData ? formatCurrency(selectedData.totalRate - calculatedPrice.total + calculatedPrice.taxes) : formatCurrency(calculatedPrice.taxes)}</span>
+            </div>
+          </Td>
+          
+          <Td>
+            {renderMealPlanSummary()}
+          </Td>
+          
+        </Tr>
+      );
+    }
+    return options;
+  };
 
-        </div>
-      </Td>
-      <Td>{renderSelectedPlansSummary()}</Td>
+  return (
+    <>
+      {renderOccupancyOptions()}
       <RoomSelectionModal
         open={showRoomSelectionModal}
         onClose={() => setShowRoomSelectionModal(false)}
@@ -263,6 +270,8 @@ const RoomInfoRow = ({
         roomType={roomType}
         availableRooms={availableRooms}
         mealPlans={mealPlans}
+        selectedOccupancy={selectedOccupancy}
+        onSelectChange={handleSelectChange} // Pass handleSelectChange to RoomSelectionModal
       />
       <MoreInfoModal
         showModal={showMoreInfoModal}
@@ -272,7 +281,7 @@ const RoomInfoRow = ({
         roomDescription={roomInfo.description}
         amenities={roomInfo.amenities}
       />
-    </Tr>
+    </>
   );
 };
 

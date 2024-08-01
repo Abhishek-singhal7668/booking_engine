@@ -37,7 +37,7 @@ const SelectCol = tw(Col)`
   text-right
 `;
 
-const RoomSelectionModal = ({ open, onClose, onConfirm, roomType, availableRooms, mealPlans = [] }) => {
+const RoomSelectionModal = ({ open, onClose, onConfirm, roomType, availableRooms, mealPlans = [] ,selectedOccupancy}) => {
   const [selectedPlans, setSelectedPlans] = useState({});
   const [remainingRooms, setRemainingRooms] = useState(availableRooms);
 
@@ -67,8 +67,11 @@ const RoomSelectionModal = ({ open, onClose, onConfirm, roomType, availableRooms
       return newSelectedPlans;
     });
   };
-
-  const renderMealPlanRow = (label, value, setter, rate,stdOccupancy, extraCharge,max_occupancy) => {
+  const modifiedMealPlans = mealPlans.map(plan => ({
+    ...plan,
+    rate: plan.rate + Math.max(0, selectedOccupancy - plan.occupancy) * plan.extra_occupancy_charge
+  }));
+  const renderMealPlanRow = (label, value, setter, rate, stdOccupancy, extraCharge, maxOccupancy) => {
     const maxRooms = Math.max(availableRooms - Object.values(selectedPlans).reduce((sum, num) => sum + num, 0) + value, 0);
     const options = Array.from({ length: maxRooms + 1 }, (_, i) => i);
 
@@ -77,13 +80,13 @@ const RoomSelectionModal = ({ open, onClose, onConfirm, roomType, availableRooms
         <LabelCol span={18}>
           <Text strong>{label} - ₹{rate}</Text>
           <div style={{ marginTop: '4px', padding: '8px', backgroundColor: '#f0f4f8', borderRadius: '4px', border: '1px solid #d9d9d9' }}>
-            {stdOccupancy !== max_occupancy ? (
+            {stdOccupancy !== maxOccupancy ? (
               <Text type="secondary" className="text-xs">
-                <span style={{ color: '#555' }}>Note: Extra Person above {stdOccupancy} in a room will be charged extra ₹{extraCharge}/person. This room can have maximum occupancy of {max_occupancy}</span>
+                <span style={{ color: '#555' }}>Note: Extra Person above {stdOccupancy} in a room will be charged extra ₹{extraCharge}/person. This room can have maximum occupancy of {maxOccupancy}</span>
               </Text>
             ) : (
               <Text type="secondary" className="text-xs">
-                <span style={{ color: '#555' }}>Note: This room can have a maximum occupancy of {max_occupancy}</span>
+                <span style={{ color: '#555' }}>Note: This room can have a maximum occupancy of {maxOccupancy}</span>
               </Text>
             )}
           </div>
@@ -91,13 +94,13 @@ const RoomSelectionModal = ({ open, onClose, onConfirm, roomType, availableRooms
         <SelectCol span={6}>
           <Select style={{ width: '100%' }} value={value} onChange={(val) => setter(label, val)}>
             {options.map(num => (
-              <Option key={num} value={num}>{num}</Option>
+              <Option key={num} value={num}>{num} {num > stdOccupancy ? `(+₹${extraCharge * (num - stdOccupancy)})` : ''}</Option>
             ))}
           </Select>
         </SelectCol>
       </MealPlanRow>
     );
-    
+
   };
 
   const renderSelectedPlansSummary = () => (
@@ -128,7 +131,7 @@ const RoomSelectionModal = ({ open, onClose, onConfirm, roomType, availableRooms
         <ModalTitle level={3}>Choose Your Options</ModalTitle>
         <DividerStyled />
         <Space direction="vertical" size="middle" className="w-full">
-          {mealPlans.length > 0 ? (
+          {modifiedMealPlans.length > 0 ? (
             mealPlans.map(plan => (
               renderMealPlanRow(
                 plan.rate_plan_name, 
