@@ -21,16 +21,8 @@ const NavbarItems = ({ isAuthenticated, onHamburgerMenuToggle }) => {
    * Handles the logout action by calling the logout API and updating the authentication state.
    */
   console.log("navabar",propertyId);
-  const handleLogout = async () => {
-    await networkAdapter.post('api/users/logout');
-    context.triggerAuthCheck();
-    navigate('/login');
-  };
-
-  const dropdownOptions = [
-    { name: 'Profile', onClick: () => navigate('/user-profile') },
-    { name: 'Logout', onClick: handleLogout },
-  ];
+ 
+ 
 
   /**
    * Determines if a given path is the current active path.

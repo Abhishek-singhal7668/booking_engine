@@ -31,9 +31,14 @@ const amenityIcons = {
   "Work Desk": faMugHot,
 };
 
-const MoreInfoModal = ({ showModal, onClose, roomType, room_image, roomDescription, amenities }) => {
+const MoreInfoModal = ({ showModal, onClose, roomType, room_image, room }) => {
   if (!showModal) return null; // Don't render if not shown
 
+  // Find the room data for the given roomType
+  const roomData = room.find(item => item.room_type === roomType);
+  const roomDescription = roomData ? roomData.description : "No description available";
+  const amenities = roomData ? roomData.amenities : [];
+  console.log("more info",roomData);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out">
       <div className="absolute inset-0 bg-gray-800 opacity-75" onClick={onClose}></div>
@@ -54,8 +59,8 @@ const MoreInfoModal = ({ showModal, onClose, roomType, room_image, roomDescripti
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4">
                 {amenities.map((amenity, index) => (
                   <li key={index} className="flex items-center space-x-2">
-                    <FontAwesomeIcon icon={amenityIcons[amenity]} className="text-blue-500 text-lg" />
-                    <span className="text-gray-700">{amenity}</span>
+                    <FontAwesomeIcon icon={amenityIcons[amenity.name] || faUtensils} className="text-blue-500 text-lg" />
+                    <span className="text-gray-700">{amenity.name}</span>
                   </li>
                 ))}
               </ul>

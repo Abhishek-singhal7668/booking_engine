@@ -6,13 +6,16 @@ import axios from 'axios';
 import Loader from 'components/ux/loader/loader';
 import { v4 as uuidv4 } from 'uuid';
 
+import { useTotal } from 'contexts/TotalContext'
 const ROOT_URL = process.env.REACT_APP_API_URL;;
 const ROOT_UURL="http://localhost:8081";
+
+
 const RAZORPAY_KEY_ID = process.env.REACT_APP_RAZORPAY_KEY_ID;
 const RazorpayCheckout = ({ pageInfo, formData, isFormValid,bookingData }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-
+  const {total}=useTotal();
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -105,6 +108,7 @@ const RazorpayCheckout = ({ pageInfo, formData, isFormValid,bookingData }) => {
       // setIsSubmitting(false);
     }
   }
+  
   const handlePayment = async () => {
     if (!isFormValid()) {
       toast.error('Please fill in all required fields.');
@@ -164,7 +168,7 @@ const RazorpayCheckout = ({ pageInfo, formData, isFormValid,bookingData }) => {
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Finner',
-        description: 'Test Transaction',
+        description: ' Transaction',
         order_id: orderData.id, // This is the order ID returned from the backend
         handler: async function (response) {
           console.log(response);
@@ -230,7 +234,7 @@ const RazorpayCheckout = ({ pageInfo, formData, isFormValid,bookingData }) => {
         className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${!isFormValid() ? 'opacity-50 cursor-not-allowed' : ''}`}
         disabled={!isFormValid()}  
       >
-        Pay ₹{pageInfo.total}
+        Pay ₹{total}
       </button>
       <ToastContainer />
     </div>

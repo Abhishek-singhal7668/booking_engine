@@ -24,7 +24,7 @@ const Checkout = () => {
     return Object.values(errors).every(error => error === false) &&
            Object.values(formData).every(value => value.trim() !== '');
   };
-  
+  console.log("checkout",pageInfo);
   const [formData, setFormData] = useState({
     email: '',
     name: '',

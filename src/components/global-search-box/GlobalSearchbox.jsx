@@ -47,15 +47,19 @@ const GlobalSearchBox = (props) => {
     handleGuestInputChange(adults, children, rooms);
     onSearchButtonAction();
   };
-
+  const properties=propertyListInput;
+  const getPropertyTitle = (propertyId, properties) => {
+    const property = properties.find(property => property.property_id === propertyId);
+    return property ? property.title : 'Property not found';
+  };
+  const propertyTitle=getPropertyTitle(propertyId,properties);
+  handlePropertyNameChange(propertyTitle);
   return (
     <div className="flex flex-wrap flex-col lg:flex-row hero-content__search-box relative p-2 sm:p-4">
       <Select
         className="w-full sm:w-auto mb-4 sm:mb-0"
-        placeholder="Select Property"
-        value={propertyListInput.find(
-          (property) => property.title === defaultPropertyValue
-        )?.title || null}
+        placeholder={propertyTitle}
+        value={propertyTitle}
         onChange={(value) => handlePropertyNameChange(value)}
         dropdownStyle={{ borderRadius: 0 }}
         style={{
@@ -66,12 +70,13 @@ const GlobalSearchBox = (props) => {
           borderRadius: '0px', // Square corners
           boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)', // Add subtle shadow
         }} // Add custom styles for the square box
+        
       >
-        {propertyListInput.map((property, index) => (
-          <Select.Option key={`property-${index}`} value={property.title}>
-            {property.title}
+        
+          <Select.Option key={propertyId} value={propertyTitle}>
+            {propertyTitle}
           </Select.Option>
-        ))}
+      
       </Select>
       <DateRangePicker
         className="w-full sm:w-auto mb-4 sm:mb-0"

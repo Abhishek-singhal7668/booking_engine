@@ -17,6 +17,7 @@ import ForgotPassword from './routes/forgot-password/ForgotPassword';
 import Checkout from 'routes/checkout/Checkout';
 import BookingConfirmation from 'routes/booking-confimation/BookingConifrmation';
 import Modal from 'react-modal';
+import { TotalProvider } from 'contexts/TotalContext';
 // if (process.env.NODE_ENV === 'development') {
 //   makeServer();
 // }
@@ -74,7 +75,9 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <AuthProvider>
+    <TotalProvider>
     <RouterProvider router={router} />
+    </TotalProvider>
   </AuthProvider>
 );
 
